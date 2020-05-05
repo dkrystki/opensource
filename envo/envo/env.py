@@ -1,0 +1,125 @@
+import os
+from dataclasses import dataclass, fields
+from pathlib import Path
+from subprocess import Popen
+from tempfile import NamedTemporaryFile
+from typing import Any, Dict, List, Optional
+
+
+@dataclass
+class BaseEnv:
+    class UnsetVariable(Exception):
+        pass
+
+    class Meta:
+        raw: List[str] = []
+
+    def __init__(self) -> None:
+        if not hasattr(self, "_name"):
+            self._name = str(self.__class__.__name__)
+
+    # Repeating this code to populate _name without calling super().__init__()
+    def __post_init__(self) -> None:
+        if not hasattr(self, "_name"):
+            self._name = str(self.__class__.__name__)
+
+    def _validate(self, parent_name: str) -> None:
+        for f in fields(self):
+            if not hasattr(self, f.name):
+                # TODO: sometimes prints double dots
+                raise self.UnsetVariable(
+                    f'Env variable "{parent_name}.{f.name}" is not set!'
+                )
+
+            attr: Any = getattr(self, f.name)
+
+            if issubclass(type(attr), BaseEnv):
+                attr._validate(parent_name=f"{parent_name}.{f.name}.")
+
+    def activate(self, namespace: str = "") -> None:
+        self._validate(self._name)
+
+        namespace = f"{namespace}{self._name.replace('_', '')}_".upper()
+        for f in fields(self):
+            var_name: str = f.name
+            var = getattr(self, var_name)
+            if isinstance(var, BaseEnv):
+                var.activate(namespace=namespace)
+            else:
+                is_raw = var_name in self.Meta.raw
+                os.environ[f"{namespace if not is_raw else''}{var_name.upper()}"] = str(
+                    var
+                )
+
+    def __str__(self) -> str:
+        return self._name
+
+
+@dataclass
+class Env(BaseEnv):
+    root: Path
+    emoji: str
+    stage: str
+
+    def __init__(self, root: Path, name: Optional[str] = None) -> None:
+        super().__init__()
+        self.root = root
+        if name:
+            self._name = name
+        self.envs_before: Dict[str, Any] = os.environ.copy()
+
+    def activate(self, *args: Any, **kwargs: Any) -> None:
+        super().activate(*args, **kwargs)
+
+    def as_string(self, ignore_unchanged: bool = True) -> List[str]:
+        lines: List[str] = []
+
+        for key, value in os.environ.items():
+            if ignore_unchanged:
+                if key in self.envs_before and value == self.envs_before[key]:
+                    continue
+            if "BASH_FUNC_" not in key:
+                lines.append(f'{key}="{value}"')
+
+        return lines
+
+    def print_envs(self) -> None:
+        self.activate()
+        content = "".join([f"export {line}\n" for line in self.as_string()])
+        print(content)
+
+    def dump_dot_env(self) -> None:
+        self.activate()
+        path = Path(f".env{'_' if self.stage else ''}{self.stage}")
+        content = "\n".join(self.as_string())
+        path.write_text(content)
+
+    def shell(self) -> Popen:
+        self.activate()
+
+        bash_rc = NamedTemporaryFile(mode="w", buffering=True, delete=False)
+        bash_rc.write("source ~/.bashrc\n")
+        bash_rc.write("")
+        content = ";\n".join(self.as_string(ignore_unchanged=True))
+        bash_rc.write(content)
+        bash_rc.write("\n")
+        bash_rc.write(f"PS1={self.emoji}\\({self._name}\\)$PS1\n")
+
+        return Popen(["bash", "--rcfile", f"{bash_rc.name}"])
+
+
+@dataclass
+class VenvEnv(BaseEnv):
+    class Meta:
+        raw: List[str] = ["path"]
+
+    path: str
+    bin: Path
+
+    def __init__(self, owner: Env) -> None:
+        self.owner = owner
+        self._name = "venv"
+        super().__init__()
+
+        self.bin = self.owner.root / ".venv/bin"
+        self.path = f"""{str(self.bin)}:{os.environ['PATH']}"""

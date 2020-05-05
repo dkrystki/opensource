@@ -1,0 +1,13 @@
+version: '3.5'
+
+services:
+  rhei:
+    container_name: rhei
+    hostname: rhei
+    build:
+      dockerfile: ./docker/Dockerfile
+      context: .
+    volumes:
+      - ".:/srv"
+    command: /usr/bin/supervisord
+    restart: always

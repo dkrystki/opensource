@@ -1,0 +1,5 @@
+.venv
+bin/host
+.dockerignore
+Dockerfile
+README.md
