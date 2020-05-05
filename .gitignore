@@ -90,3 +90,6 @@ __pycache__
 
 # bin files that are downloaded on bootstrap
 .deps
+
+__version__.py
+sandbox

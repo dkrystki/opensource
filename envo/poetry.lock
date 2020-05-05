@@ -327,14 +327,6 @@ ptyprocess = ">=0.5"
 
 [[package]]
 category = "dev"
-description = "Common code for plasma opensource packages."
-name = "plasma-comm"
-optional = false
-python-versions = ">=3.6.1,<4.0"
-version = "0.1.7"
-
-[[package]]
-category = "dev"
 description = "plugin and hook calling mechanisms for python"
 name = "pluggy"
 optional = false
@@ -557,7 +549,7 @@ docs = ["sphinx", "jaraco.packaging (>=3.2)", "rst.linker (>=1.9)"]
 testing = ["jaraco.itertools", "func-timeout"]
 
 [metadata]
-content-hash = "14a49a2076d8b21eadbed9d69ca0d85490f43a92a4dfef0fb24dd5d1c43eb9bb"
+content-hash = "a1c12212d1a2bb42f8450889d8c0c45c5dbac52df7776c700655dcab48279ea8"
 python-versions = ">=3.6.1, <4.0"
 
 [metadata.files]
@@ -722,10 +714,6 @@ pep8-naming = [
 pexpect = [
     {file = "pexpect-4.8.0-py2.py3-none-any.whl", hash = "sha256:0b48a55dcb3c05f3329815901ea4fc1537514d6ba867a152b581d69ae3710937"},
     {file = "pexpect-4.8.0.tar.gz", hash = "sha256:fc65a43959d153d0114afe13997d439c22823a27cefceb5ff35c2178c6784c0c"},
-]
-plasma-comm = [
-    {file = "plasma-comm-0.1.7.tar.gz", hash = "sha256:ee6dceeb0566135e4fbd7edec2160a5c63634af0b9f036bb5fb0c20fc5d71fb3"},
-    {file = "plasma_comm-0.1.7-py3-none-any.whl", hash = "sha256:13cd4aad8dad5509ffbc3eeae221403d8f50ae5a69e0ca468e3e8dc1e74fd1dd"},
 ]
 pluggy = [
     {file = "pluggy-0.13.1-py2.py3-none-any.whl", hash = "sha256:966c145cd83c96502c3c3868f50408687b38434af77734af1e9ca461a4081d2d"},

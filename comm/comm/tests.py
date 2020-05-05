@@ -1,7 +1,7 @@
 import os
 import shutil
 from pathlib import Path
-from typing import Generator, Callable
+from typing import Callable, Generator
 
 import pexpect as pexpect
 from pytest import fixture  # type: ignore
@@ -10,7 +10,7 @@ root = Path(".").absolute()
 
 
 @fixture
-def in_sandbox() -> Generator:
+def sandbox() -> Generator:
     sandbox_dir = root / "sandbox"
     if sandbox_dir.exists():
         shutil.rmtree(str(sandbox_dir))

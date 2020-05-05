@@ -3,24 +3,28 @@ import sys
 from importlib import import_module, reload
 from pathlib import Path
 
-import pytest
-
 import envo.scripts
+import pytest
+from tests import utils
 
 
-@pytest.mark.usefixtures("mock_exit")
+@pytest.mark.usefixtures("mock_exit", "sandbox", "version")
 class TestUnit:
-    def test_creating(self, in_sandbox, flake8, mypy):
-        sys.argv = ["envo", "test", "--init"]
-        envo.scripts._main()
+    @pytest.fixture(autouse=True)
+    def setup(self):
+        pass
+
+    def test_creating(self):
+        utils.command("test", "--init")
 
         assert Path("env_comm.py").exists()
         assert Path("env_test.py").exists()
 
-        flake8()
-        mypy()
+        utils.flake8()
+        utils.mypy()
 
-    def test_importing(self, in_sandbox):
+    def test_importing(self):
+        utils.command()
         sys.argv = ["envo", "test", "--init"]
         envo.scripts._main()
 
@@ -31,29 +35,30 @@ class TestUnit:
         assert env.stage == "test"
         assert env.emoji == envo.scripts.Envo.stage_emoji_mapping[env.stage]
 
-    def test_shell(self, in_sandbox):
-        sys.argv = ["envo", "test", "--init"]
-        envo.scripts._main()
+    def test_version(self, capsys):
+        utils.command("--version")
+        captured = capsys.readouterr()
+        assert captured.out == "1.2.3\n"
 
-        sys.argv = ["envo", "test"]
-        envo.scripts._main()
+    def test_shell(self):
+        utils.command("test", "--init")
+        utils.command("test")
 
-    def test_dry_run(self, in_sandbox, capsys):
-        sys.argv = ["envo", "test", "--init"]
-        envo.scripts._main()
+    def test_shell_module_with_the_same_name(self):
+        utils.command("--init")
+        Path("sandbox").mkdir()
+        Path("sandbox/__init__.py").touch()
+        utils.command()
 
-        sys.argv = ["envo", "test", "--dry-run"]
-        envo.scripts._main()
-
+    def test_dry_run(self, capsys):
+        utils.command("test", "--init")
+        utils.command("test", "--dry-run")
         captured = capsys.readouterr()
         assert captured.out != ""
 
-    def test_save(self, in_sandbox, capsys):
-        sys.argv = ["envo", "test", "--init"]
-        envo.scripts._main()
-
-        sys.argv = ["envo", "test", "--dry-run", "--save"]
-        envo.scripts._main()
+    def test_save(self, capsys):
+        utils.command("test", "--init")
+        utils.command("test", "--dry-run", "--save")
 
         assert Path(".env_test").exists()
         Path(".env_test").unlink()
@@ -61,11 +66,26 @@ class TestUnit:
         captured = capsys.readouterr()
         assert captured.out != ""
 
-    def test_activating(self, in_sandbox):
-        sys.argv = ["envo", "test", "--init"]
-        envo.scripts._main()
-
+    def test_activating(self):
+        utils.command("test", "--init")
         assert os.environ["SANDBOX_STAGE"] == "test"
+
+    def test_init_py_created(self, mocker):
+        mocker.patch("envo.scripts.Path.unlink")
+        utils.command("test", "--init")
+        assert Path("__init__.py").exists()
+
+    def test_init_py_delete_if_not_exists(self):
+        utils.command("test", "--init")
+        assert not Path("__init__.py").exists()
+
+    def test_init_untouched_if_exists(self):
+        file = Path("__init__.py")
+        file.touch()
+        file.write_text("a = 1")
+        utils.command("test", "--init")
+
+        assert file.read_text() == "a = 1"
 
     def test_nested(self, nested_env):
         nested_env.activate()
@@ -81,9 +101,8 @@ class TestUnit:
         assert os.environ["NOT_NESTED"] == "NOT_NESTED_TEST"
         assert os.environ["NESTED"] == "NESTED_TEST"
 
-    def test_venv_addon(self, in_sandbox, flake8, mypy):
-        sys.argv = ["envo", "test", "--init=venv"]
-        envo.scripts._main()
+    def test_venv_addon(self):
+        utils.command("test", "--init=venv")
 
         reload(import_module("sandbox.env_comm"))
         env = reload(import_module("sandbox.env_test")).Env()
@@ -93,5 +112,5 @@ class TestUnit:
         assert "SANDBOX_VENV_BIN" in os.environ
         assert f"{Path('.').absolute()}/.venv/bin" in os.environ["PATH"]
 
-        flake8()
-        mypy()
+        utils.flake8()
+        utils.mypy()

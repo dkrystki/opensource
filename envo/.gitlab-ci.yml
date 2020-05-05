@@ -51,6 +51,8 @@ envo.publish:
     - .base
   script:
     - ./.bin/recreate_stubs
+    - ./.bin/generate_version
+    - echo $(poetry version) >> envo/__version__.py
     - poetry build
     - poetry publish --username $PYPI_USERNAME --password $PYPI_PASSWORD
 

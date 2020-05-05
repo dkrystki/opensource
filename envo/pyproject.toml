@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "envo"
-version = "0.4.9"
+version = "0.5.0"
 description = "Smart Environment variables - Define environmental variables in python and activate hot reloaded shells for them."
 authors = ["Damian Krystkiewicz <damian.krystkiewicz@gmail.com>"]
 classifiers = [
@@ -27,7 +27,6 @@ python = ">=3.6.1, <4.0"
 dataclasses = { version = "*", python = ">=3.6, <3.7" }
 jinja2 = "^2"
 inotify = "*"
-plasma-comm = "^0.1.6"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.4.1"
@@ -40,7 +39,7 @@ pexpect = "^4.8.0"
 isort = "^4.3.21"
 pre-commit = "^2.3.0"
 black = "^19.10b0"
-plasma-comm = "^0.1.5"
+toml = "^0.10.0"
 
 [tool.poetry.scripts]
 envo = "envo.scripts:_main"

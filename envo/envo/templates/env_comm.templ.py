@@ -2,17 +2,13 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
-from envo import Env
-
-{%- if "venv" in selected_addons-%}
-, VenvEnv
-{%- endif %}
+import envo
 
 
 @dataclass
-class {{ class_name }}Comm(Env):
+class {{ class_name }}Comm(envo.Env):
     {%- if "venv" in selected_addons%}
-    venv: VenvEnv
+    venv: envo.VenvEnv
     {%- endif %}
 
     def __init__(self) -> None:
@@ -20,7 +16,7 @@ class {{ class_name }}Comm(Env):
         self._name = "{{ name }}"
 
         {%- if "venv" in selected_addons %}
-        self.venv = VenvEnv(owner=self)
+        self.venv = envo.VenvEnv(owner=self)
         {%- endif %}
 
 

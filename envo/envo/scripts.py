@@ -13,9 +13,8 @@ from typing import Any, Dict, List, Optional
 
 from inotify.adapters import Inotify  # type: ignore
 from jinja2 import Environment, Template
-from plasma_comm import comm
 
-from envo import Env
+from envo import Env, comm
 
 
 class Envo:
@@ -62,6 +61,7 @@ class Envo:
         self.source_changed = False
 
         self._envs_before: Dict[str, Any] = os.environ.copy()
+        self.env_root = Path(".").absolute()
 
     def spawn_shell(self) -> None:
         if self.shell_proc:
@@ -70,7 +70,7 @@ class Envo:
             self.shell_proc = None
         try:
             env = self.get_env()
-            os.environ = os._Environ(self._envs_before.copy())  # type: ignore
+            os.environ = self._envs_before.copy()  # type: ignore
             self.shell_proc = env.shell()
         except Exception:
             print_exc()
@@ -106,8 +106,10 @@ class Envo:
 
     def _discover_envs(self) -> None:
         path = Path(".").absolute()
+        sys.path = [p for p in sys.path if "site-packages" in p]
         while True:
             if (path / "env_comm.py").exists():
+                self.env_root = path
                 sys.path.append(str(path.parent))
                 break
             else:
@@ -124,11 +126,13 @@ class Envo:
         module_name = f"{package}.{env_name}"
         comm_module_name = f"{package}.env_comm"
 
-        if Path("__init__.py").exists():
+        init_file = self.env_root / "__init__.py"
+
+        if init_file.exists():
             init_exists = True
         else:
             init_exists = False
-            Path("__init__.py").touch()
+            init_file.touch()
 
         try:
             reload(import_module(comm_module_name, package=package))
@@ -139,8 +143,8 @@ class Envo:
             print(f"""Couldn't import "{module_name}" ({exc}).""")
             raise
         finally:
-            if not init_exists and Path("__init__.py").exists():
-                Path("__init__.py").unlink()
+            if not init_exists and init_file.exists():
+                init_file.unlink()
 
     def _create_from_templ(
         self, templ_file: Path, output_file: Path, is_comm: bool = False
@@ -179,6 +183,11 @@ class Envo:
         self._create_from_templ(Path("env.templ.py"), env_file)
 
     def handle_command(self, args: argparse.Namespace) -> None:
+        if args.version:
+            from envo.__version__ import __version__
+
+            print(__version__)
+
         if args.init:
             self.init_files()
 
@@ -201,6 +210,7 @@ def _main() -> None:
         "stage", type=str, default="local", help="Stage to activate.", nargs="?"
     )
     parser.add_argument("--dry-run", default=False, action="store_true")
+    parser.add_argument("--version", default=False, action="store_true")
     parser.add_argument("--save", default=False, action="store_true")
     parser.add_argument("-i", "--init", nargs="?", const=True, action="store")
 
