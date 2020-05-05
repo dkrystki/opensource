@@ -1,3 +1,0 @@
-poetry run stubgen plasma_comm -o stubs
-mv stubs/plasma_comm/* plasma_comm/
-rm stubs -r

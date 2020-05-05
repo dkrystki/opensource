@@ -1,23 +1,4 @@
 ---
-stages:
-  - test
-  - publish
-
-.base:
-  stage: test
-  cache:
-    key: ${CI_COMMIT_REF_SLUG}:${CI_JOB_NAME}
-    paths:
-      - .venv
-  image: python:3.8.2-slim-buster
-  before_script:
-    - python -m venv .venv
-    - source .venv/bin/activate
-    - pip install poetry==1.0.5
-    - poetry config virtualenvs.create true
-    - poetry config virtualenvs.in-project true
-    - poetry install
-
 
 flake8:
   extends:
@@ -65,6 +46,6 @@ publish:
 
   only:
     changes:
-      - pyproject.toml
+      - envo/pyproject.toml
     refs:
       - master

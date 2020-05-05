@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 
-black $@
+poetry run isort -q $@
 git add $@
