@@ -3,7 +3,7 @@ from dataclasses import dataclass, fields
 from pathlib import Path
 from subprocess import Popen
 from tempfile import NamedTemporaryFile
-from typing import Any, Dict, List, Optional
+from typing import Any, List, Optional
 
 
 @dataclass
@@ -66,18 +66,14 @@ class Env(BaseEnv):
         self.root = root
         if name:
             self._name = name
-        self.envs_before: Dict[str, Any] = os.environ.copy()
 
     def activate(self, *args: Any, **kwargs: Any) -> None:
         super().activate(*args, **kwargs)
 
-    def as_string(self, ignore_unchanged: bool = True) -> List[str]:
+    def as_string(self) -> List[str]:
         lines: List[str] = []
 
         for key, value in os.environ.items():
-            if ignore_unchanged:
-                if key in self.envs_before and value == self.envs_before[key]:
-                    continue
             if "BASH_FUNC_" not in key:
                 lines.append(f'{key}="{value}"')
 
@@ -100,7 +96,7 @@ class Env(BaseEnv):
         bash_rc = NamedTemporaryFile(mode="w", buffering=True, delete=False)
         bash_rc.write("source ~/.bashrc\n")
         bash_rc.write("")
-        content = ";\n".join(self.as_string(ignore_unchanged=True))
+        content = ";\n".join(self.as_string())
         bash_rc.write(content)
         bash_rc.write("\n")
         bash_rc.write(f"PS1={self.emoji}\\({self._name}\\)$PS1\n")

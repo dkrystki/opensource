@@ -1,72 +1,44 @@
 ---
-stages:
-  - test
-  - publish
 
-.base:
-  stage: test
-  cache:
-    key: ${CI_COMMIT_REF_SLUG}:${CI_JOB_NAME}
-    paths:
-      - .venv
-  image: python:3.8.2-slim-buster
-  before_script:
-    - python -m venv .venv
-    - source .venv/bin/activate
-    - pip install poetry==1.0.5
-    - poetry config virtualenvs.create true
-    - poetry config virtualenvs.in-project true
-    - poetry install
-    - eval "$(./shell.py --dry-run)"
+.comm.base:
+  variables:
+    PKG_DIR: "comm"
 
-
-flake8:
+comm.flake8:
   extends:
+    - .comm.base
     - .base
   script:
     - flake8
 
-mypy:
+comm.mypy:
   extends:
+    - .comm.base
     - .base
   script:
     - mypy .
 
 
-test 1/3:
+comm.test 1/3:
   image: python:3.8.2-slim-buster
   extends:
+    - .comm.base
     - .base
   script:
     - pytest tests
 
-test 2/3:
+comm.test 2/3:
   image: python:3.7-slim-buster
   extends:
+    - .comm.base
     - .base
   script:
     - pytest tests
 
-test 3/3:
+comm.test 3/3:
   image: python:3.6-slim-buster
   extends:
+    - .comm.base
     - .base
   script:
     - pytest tests
-
-
-publish:
-  stage: publish
-
-  extends:
-    - .base
-  script:
-    - ./.bin/recreate_stubs
-    - poetry build
-    - poetry publish --username $PYPI_USERNAME --password $PYPI_PASSWORD
-
-  only:
-    changes:
-      - pyproject.toml
-    refs:
-      - master

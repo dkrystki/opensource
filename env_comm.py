@@ -20,7 +20,7 @@ class OpensourceEnvComm(Env):
 
     def __init__(self) -> None:
         super().__init__(root=Path(os.path.realpath(__file__)).parent)
-        self._name = "opensource"
+        self._name = "os"
         self.venv = VenvEnv(owner=self)
 
         self.comm = self.Package(root=self.root / "comm")

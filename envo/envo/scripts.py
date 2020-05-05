@@ -9,7 +9,7 @@ from pathlib import Path
 from subprocess import Popen
 from threading import Thread
 from traceback import print_exc
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from inotify.adapters import Inotify  # type: ignore
 from jinja2 import Environment, Template
@@ -61,6 +61,8 @@ class Envo:
 
         self.source_changed = False
 
+        self._envs_before: Dict[str, Any] = os.environ.copy()
+
     def spawn_shell(self) -> None:
         if self.shell_proc:
             self.shell_proc.terminate()
@@ -68,6 +70,7 @@ class Envo:
             self.shell_proc = None
         try:
             env = self.get_env()
+            os.environ = os._Environ(self._envs_before.copy())  # type: ignore
             self.shell_proc = env.shell()
         except Exception:
             print_exc()
@@ -181,8 +184,6 @@ class Envo:
 
         self._discover_envs()
 
-        self._start_files_watchdog()
-
         if args.save:
             self.get_env().dump_dot_env()
 
@@ -190,6 +191,7 @@ class Envo:
             self.get_env().print_envs()
         else:
             self.spawn_shell()
+            self._start_files_watchdog()
             self.shell_thread.start()
 
 
