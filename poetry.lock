@@ -50,6 +50,15 @@ version = "7.1.2"
 
 [[package]]
 category = "main"
+description = "A backport of the dataclasses module for Python 3.6"
+marker = "python_version >= \"3.6\" and python_version < \"3.7\""
+name = "dataclasses"
+optional = false
+python-versions = ">=3.6, <3.7"
+version = "0.7"
+
+[[package]]
+category = "main"
 description = "Smart Environment variables - Define environmental variables in python and activate hot reloaded shells for them."
 name = "envo"
 optional = false
@@ -60,6 +69,10 @@ version = "0.4.9"
 inotify = "*"
 jinja2 = ">=2,<3"
 plasma-comm = ">=0.1.6,<0.2.0"
+
+[package.dependencies.dataclasses]
+python = ">=3.6,<3.7"
+version = "*"
 
 [[package]]
 category = "main"
@@ -157,8 +170,8 @@ python-versions = "*"
 version = "1.4.1"
 
 [metadata]
-content-hash = "df1f7eb97f8c6ffe310e8d21ce7ce18ca4fbef8730d0a2d950e28f75663342a3"
-python-versions = "^3.8.2"
+content-hash = "839cd290c4bdaf05aa4090169a1b7deff5e73e1b2cdf4407acb039cd62d42dce"
+python-versions = ">=3.6.1, <4.0"
 
 [metadata.files]
 appdirs = [
@@ -176,6 +189,10 @@ black = [
 click = [
     {file = "click-7.1.2-py2.py3-none-any.whl", hash = "sha256:dacca89f4bfadd5de3d7489b7c8a566eee0d3676333fbb50030263894c38c0dc"},
     {file = "click-7.1.2.tar.gz", hash = "sha256:d2b5255c7c6349bc1bd1e59e08cd12acbbd63ce649f2588755783aa94dfb6b1a"},
+]
+dataclasses = [
+    {file = "dataclasses-0.7-py3-none-any.whl", hash = "sha256:3459118f7ede7c8bea0fe795bff7c6c2ce287d01dd226202f7c9ebc0610a7836"},
+    {file = "dataclasses-0.7.tar.gz", hash = "sha256:494a6dcae3b8bcf80848eea2ef64c0cc5cd307ffc263e17cdf42f3e5420808e6"},
 ]
 envo = [
     {file = "envo-0.4.9-py3-none-any.whl", hash = "sha256:0c1dc6ce78144d06ece2e002c077d06c5713be434b09010a00968f20f20ed0cd"},

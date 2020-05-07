@@ -176,11 +176,11 @@ class Envo:
 
         if not env_comm_file.exists():
             self._create_from_templ(
-                Path("env_comm.templ.py"), env_comm_file, is_comm=True
+                Path("env_comm.py.templ"), env_comm_file, is_comm=True
             )
 
         env_file = Path(f"env_{self.se.stage}.py")
-        self._create_from_templ(Path("env.templ.py"), env_file)
+        self._create_from_templ(Path("env.py.templ"), env_file)
 
     def handle_command(self, args: argparse.Namespace) -> None:
         if args.version:

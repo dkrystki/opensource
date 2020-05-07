@@ -5,7 +5,8 @@ from pathlib import Path
 
 import envo.scripts
 import pytest
-from tests import utils
+from envo.comm.utils import flake8, mypy
+from tests.utils import command
 
 
 @pytest.mark.usefixtures("mock_exit", "sandbox", "version")
@@ -15,16 +16,16 @@ class TestUnit:
         pass
 
     def test_creating(self):
-        utils.command("test", "--init")
+        command("test", "--init")
 
         assert Path("env_comm.py").exists()
         assert Path("env_test.py").exists()
 
-        utils.flake8()
-        utils.mypy()
+        flake8()
+        mypy()
 
     def test_importing(self):
-        utils.command()
+        command()
         sys.argv = ["envo", "test", "--init"]
         envo.scripts._main()
 
@@ -36,29 +37,29 @@ class TestUnit:
         assert env.emoji == envo.scripts.Envo.stage_emoji_mapping[env.stage]
 
     def test_version(self, capsys):
-        utils.command("--version")
+        command("--version")
         captured = capsys.readouterr()
         assert captured.out == "1.2.3\n"
 
     def test_shell(self):
-        utils.command("test", "--init")
-        utils.command("test")
+        command("test", "--init")
+        command("test")
 
     def test_shell_module_with_the_same_name(self):
-        utils.command("--init")
+        command("--init")
         Path("sandbox").mkdir()
         Path("sandbox/__init__.py").touch()
-        utils.command()
+        command()
 
     def test_dry_run(self, capsys):
-        utils.command("test", "--init")
-        utils.command("test", "--dry-run")
+        command("test", "--init")
+        command("test", "--dry-run")
         captured = capsys.readouterr()
         assert captured.out != ""
 
     def test_save(self, capsys):
-        utils.command("test", "--init")
-        utils.command("test", "--dry-run", "--save")
+        command("test", "--init")
+        command("test", "--dry-run", "--save")
 
         assert Path(".env_test").exists()
         Path(".env_test").unlink()
@@ -67,23 +68,23 @@ class TestUnit:
         assert captured.out != ""
 
     def test_activating(self):
-        utils.command("test", "--init")
+        command("test", "--init")
         assert os.environ["SANDBOX_STAGE"] == "test"
 
     def test_init_py_created(self, mocker):
         mocker.patch("envo.scripts.Path.unlink")
-        utils.command("test", "--init")
+        command("test", "--init")
         assert Path("__init__.py").exists()
 
     def test_init_py_delete_if_not_exists(self):
-        utils.command("test", "--init")
+        command("test", "--init")
         assert not Path("__init__.py").exists()
 
     def test_init_untouched_if_exists(self):
         file = Path("__init__.py")
         file.touch()
         file.write_text("a = 1")
-        utils.command("test", "--init")
+        command("test", "--init")
 
         assert file.read_text() == "a = 1"
 
@@ -102,7 +103,7 @@ class TestUnit:
         assert os.environ["NESTED"] == "NESTED_TEST"
 
     def test_venv_addon(self):
-        utils.command("test", "--init=venv")
+        command("test", "--init=venv")
 
         reload(import_module("sandbox.env_comm"))
         env = reload(import_module("sandbox.env_test")).Env()
@@ -112,5 +113,5 @@ class TestUnit:
         assert "SANDBOX_VENV_BIN" in os.environ
         assert f"{Path('.').absolute()}/.venv/bin" in os.environ["PATH"]
 
-        utils.flake8()
-        utils.mypy()
+        flake8()
+        mypy()

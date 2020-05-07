@@ -1,15 +1,14 @@
 import os
 from pathlib import Path
 
-from pytest import fixture
-
 from envo import Env
+from pytest import fixture
 
 test_root = Path(os.path.realpath(__file__)).parent
 envo_root = test_root.parent
 
 pytest_plugins = [
-    "envo.comm.tests",
+    "envo.comm.fixtures",
 ]
 
 

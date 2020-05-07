@@ -2,9 +2,9 @@ import os
 from pathlib import Path
 
 import pytest
+from envo.comm.utils import spawn
 from pexpect import run
-
-from tests import utils
+from tests.utils import change_file
 
 
 @pytest.mark.usefixtures("sandbox")
@@ -14,7 +14,7 @@ class TestE2e:
         self.prompt = prompt
 
     def test_shell(self):
-        p = utils.spawn("envo --init")
+        p = spawn("envo --init")
         p.expect(self.prompt, timeout=1)
         p.sendline("echo test")
         p.expect(self.prompt, timeout=1)
@@ -25,7 +25,7 @@ class TestE2e:
         assert Path("env_local.py").exists()
 
     def test_dry_run(self):
-        p = utils.spawn("envo --init")
+        p = spawn("envo --init")
         p.expect(self.prompt, timeout=1)
         p.sendcontrol("d")
 
@@ -33,7 +33,7 @@ class TestE2e:
         assert ret != b""
 
     def test_save(self):
-        p = utils.spawn("envo --init --save")
+        p = spawn("envo --init --save")
         p.expect(self.prompt, timeout=1)
         p.sendcontrol("d")
 
@@ -42,21 +42,21 @@ class TestE2e:
         assert Path(".env_local").exists()
 
     def test_hot_reload(self):
-        p = utils.spawn("envo --init")
+        p = spawn("envo --init")
         p.expect(self.prompt, timeout=1)
 
-        utils.change_file(Path("env_comm.py"), 0.5, 6, "\n")
+        change_file(Path("env_comm.py"), 0.5, 6, "\n")
         p.expect(self.prompt, timeout=5)
         p.sendcontrol("d")
 
     def test_hot_reload_old_envs_gone(self):
-        p = utils.spawn("envo --init")
+        p = spawn("envo --init")
         p.expect(self.prompt, timeout=1)
 
         p.sendline("echo $SANDBOX_STAGE")
         p.expect("local", timeout=1)
 
-        utils.change_file(Path("env_comm.py"), 0.5, 14, '        self._name = "new"\n')
+        change_file(Path("env_comm.py"), 0.5, 14, '        self._name = "new"\n')
         new_prompt = self.prompt.replace(b"sandbox", b"new")
         p.expect(new_prompt, timeout=1)
 
@@ -68,27 +68,27 @@ class TestE2e:
         p.sendcontrol("d")
 
     def test_hot_reload_child_dir(self):
-        p = utils.spawn("envo --init")
+        p = spawn("envo --init")
         p.expect(self.prompt, timeout=1)
         p.sendcontrol("d")
 
         Path("./test_dir").mkdir()
         os.chdir("./test_dir")
 
-        p = utils.spawn("envo")
+        p = spawn("envo")
         p.expect(self.prompt, timeout=1)
 
-        utils.change_file(Path("../env_comm.py"), 0.5, 6, "\n")
+        change_file(Path("../env_comm.py"), 0.5, 6, "\n")
         p.expect(self.prompt, timeout=5)
         p.sendcontrol("d")
 
     def test_hot_reload_error(self):
-        p = utils.spawn("envo --init")
+        p = spawn("envo --init")
         p.expect(self.prompt, timeout=1)
 
         file_before = Path("env_comm.py").read_text()
 
-        utils.change_file(Path("env_comm.py"), 0.5, 9, "    test_var: int\n")
+        change_file(Path("env_comm.py"), 0.5, 9, "    test_var: int\n")
         p.expect(r'.*Env variable "sandbox.test_var" is not set!.*', timeout=5)
 
         Path("env_comm.py").write_text(file_before)
@@ -100,14 +100,14 @@ class TestE2e:
         assert Path("env_local.py").exists()
 
     def test_autodiscovery(self):
-        p = utils.spawn("envo --init")
+        p = spawn("envo --init")
         p.expect(self.prompt, timeout=1)
         p.sendcontrol("d")
 
         Path("./test_dir").mkdir()
         os.chdir("./test_dir")
 
-        p = utils.spawn("envo")
+        p = spawn("envo")
         p.sendline("echo test")
         p.expect(self.prompt, timeout=1)
         p.sendcontrol("d")
@@ -117,7 +117,7 @@ class TestE2e:
     def test_init_nested(self):
         expected_files = ["env_comm.py", "env_local.py"]
 
-        p = utils.spawn("envo --init")
+        p = spawn("envo --init")
         p.expect(self.prompt, timeout=1)
         p.sendcontrol("d")
 
@@ -128,7 +128,7 @@ class TestE2e:
                 Path(f).unlink()
 
         nested_prompt = r"🐣\(test_dir\).*".encode("utf-8")
-        p = utils.spawn("envo --init")
+        p = spawn("envo --init")
         p.sendline("echo test")
         p.expect(nested_prompt, timeout=1)
         p.sendcontrol("d")
@@ -136,3 +136,14 @@ class TestE2e:
         for f in expected_files:
             assert Path(f).exists()
             Path(f).unlink()
+
+    def test_env_persists_in_bash_scripts(self):
+        p = spawn("envo --init")
+        p.expect(self.prompt, timeout=1)
+
+        file = Path("script.sh")
+        file.touch()
+        file.write_text("echo $SANDBOX_ROOT\n")
+
+        p.sendline("bash script.sh")
+        p.expect(str(Path(".").absolute()), timeout=1)

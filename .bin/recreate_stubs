@@ -1,3 +1,0 @@
-poetry run stubgen envo -o stubs
-mv stubs/envo/* envo/
-rm stubs -r

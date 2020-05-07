@@ -1,6 +1,7 @@
 from pathlib import Path
 
-from plasma_comm import comm
+import comm
+from comm import utils
 
 
 class TestUnit:
@@ -15,8 +16,14 @@ class TestSandbox:
     def teardown_class(cls):
         assert not Path("sandbox").exists()
 
-    def test_in_sandbox(self, in_sandbox):
+    def test_in_sandbox(self, sandbox):
         assert Path(".").absolute().name == "sandbox"
         assert list(Path(".").glob("*")) == []
         Path("test.txt").touch()
         assert list(Path(".").glob("*")) != []
+
+
+class TestUtils:
+    def test_spawn(self):
+        s = utils.spawn("/bin/bash")
+        s.expect(".*$.*")

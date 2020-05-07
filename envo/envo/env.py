@@ -70,12 +70,14 @@ class Env(BaseEnv):
     def activate(self, *args: Any, **kwargs: Any) -> None:
         super().activate(*args, **kwargs)
 
-    def as_string(self) -> List[str]:
+    def as_string(self, add_export: bool = False) -> List[str]:
         lines: List[str] = []
 
         for key, value in os.environ.items():
             if "BASH_FUNC_" not in key:
-                lines.append(f'{key}="{value}"')
+                line = "export " if add_export else ""
+                line += f'{key}="{value}"'
+                lines.append(line)
 
         return lines
 
@@ -93,10 +95,12 @@ class Env(BaseEnv):
     def shell(self) -> Popen:
         self.activate()
 
-        bash_rc = NamedTemporaryFile(mode="w", buffering=True, delete=False)
+        bash_rc = NamedTemporaryFile(
+            mode="w", buffering=True, delete=False, encoding="utf-8"
+        )
         bash_rc.write("source ~/.bashrc\n")
         bash_rc.write("")
-        content = ";\n".join(self.as_string())
+        content = ";\n".join(self.as_string(add_export=True))
         bash_rc.write(content)
         bash_rc.write("\n")
         bash_rc.write(f"PS1={self.emoji}\\({self._name}\\)$PS1\n")

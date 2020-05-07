@@ -9,11 +9,14 @@ stages:
     key: ${CI_COMMIT_REF_SLUG}:${CI_JOB_NAME}
     paths:
       - .venv
+      - comm/.venv
+      - envo/.venv
+      - pangea/.venv
   image: python:3.8.2-slim-buster
 
   before_script:
     - python -m venv .venv
-    - export PATH=$(pwd)/.venv/bin/:PATH
+    - export PATH=$(pwd)/.venv/bin/:$PATH
     - pip install poetry==1.0.5
     # install common monorepo packages
     - poetry config virtualenvs.create true
@@ -23,7 +26,6 @@ stages:
     - poetry config virtualenvs.create true
     - poetry config virtualenvs.in-project true
     - poetry install
-    - eval "$(envo --dry-run)"
 
 include:
   - "/comm/.gitlab-ci.yml"

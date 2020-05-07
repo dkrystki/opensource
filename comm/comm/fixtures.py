@@ -1,10 +1,9 @@
 import os
 import shutil
 from pathlib import Path
-from typing import Callable, Generator
+from typing import Generator
 
-import pexpect as pexpect
-from pytest import fixture  # type: ignore
+from pytest import fixture
 
 root = Path(".").absolute()
 
@@ -26,12 +25,3 @@ def sandbox() -> Generator:
 @fixture
 def prompt() -> bytes:
     return r".*@.*$".encode("utf-8")
-
-
-@fixture
-def spawn() -> Callable[[str], pexpect.spawn]:
-    def factory(command: str) -> pexpect.spawn:
-        p = pexpect.spawn(command, echo=False)
-        return p
-
-    return factory
