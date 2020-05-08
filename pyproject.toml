@@ -9,7 +9,7 @@ python = ">=3.6.1, <4.0"
 isort = "^4.3.21"
 black = "^19.10b0"
 dataclasses = { version = "*", python = ">=3.6, <3.7" }
-envo = "^0.5.2"
+envo = "^0.5.3"
 
 [tool.poetry.dev-dependencies]
 

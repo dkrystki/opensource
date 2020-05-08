@@ -186,6 +186,7 @@ class Envo:
             from envo.__version__ import __version__
 
             print(__version__)
+            return
 
         if args.init:
             self.init_files()

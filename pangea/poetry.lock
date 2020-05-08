@@ -88,7 +88,7 @@ description = "Smart Environment variables - Define environmental variables in p
 name = "envo"
 optional = false
 python-versions = ">=3.6.1,<4.0"
-version = "0.5.2"
+version = "0.5.3"
 
 [package.dependencies]
 inotify = "*"
@@ -422,7 +422,7 @@ version = "1.0.1"
 dev = ["pytest (>=4.6.2)", "black (>=19.3b0)"]
 
 [metadata]
-content-hash = "b9f26088371133b2397410ea37e7bd98859681d0d18dd5dcb46b08a9c3a5454f"
+content-hash = "fc42da2217a4f36267edb280b5c7736c09e112373578e3209dd74793c0d16ab4"
 python-versions = "^3.8.2"
 
 [metadata.files]
@@ -459,8 +459,8 @@ entrypoints = [
     {file = "entrypoints-0.3.tar.gz", hash = "sha256:c70dd71abe5a8c85e55e12c19bd91ccfeec11a6e99044204511f9ed547d48451"},
 ]
 envo = [
-    {file = "envo-0.5.2-py3-none-any.whl", hash = "sha256:09f1b36af0caacf74bf6937d894480da2b9c067e6e33519419b2f91c2167ca23"},
-    {file = "envo-0.5.2.tar.gz", hash = "sha256:1baf16ffe85ea19a9523ce83517f3ecfcedf4a77dc70bf3b92374de605415149"},
+    {file = "envo-0.5.3-py3-none-any.whl", hash = "sha256:326d9c426118bbf17c811247dae476cadc8b51442aa7e3d03c267e34435c4670"},
+    {file = "envo-0.5.3.tar.gz", hash = "sha256:b1ab8bf1ef9c6752999b3a68e4c29d6534d322f64851e5baebd7c88680519917"},
 ]
 fire = [
     {file = "fire-0.3.1.tar.gz", hash = "sha256:9736a16227c3d469e5d2d296bce5b4d8fa8d7851e953bda327a455fc2994307f"},

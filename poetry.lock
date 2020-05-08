@@ -63,7 +63,7 @@ description = "Smart Environment variables - Define environmental variables in p
 name = "envo"
 optional = false
 python-versions = ">=3.6.1,<4.0"
-version = "0.5.2"
+version = "0.5.3"
 
 [package.dependencies]
 inotify = "*"
@@ -161,7 +161,7 @@ python-versions = "*"
 version = "1.4.1"
 
 [metadata]
-content-hash = "7ae547901d5db4e28ec463ca24084810056c91dbe61e6d810bf47e61d6bbe52b"
+content-hash = "b641ed715dd0e71fa6a57c2821ad023ba3d0c4a5cc7e9a60085c9a33052d5910"
 python-versions = ">=3.6.1, <4.0"
 
 [metadata.files]
@@ -186,8 +186,8 @@ dataclasses = [
     {file = "dataclasses-0.7.tar.gz", hash = "sha256:494a6dcae3b8bcf80848eea2ef64c0cc5cd307ffc263e17cdf42f3e5420808e6"},
 ]
 envo = [
-    {file = "envo-0.5.2-py3-none-any.whl", hash = "sha256:09f1b36af0caacf74bf6937d894480da2b9c067e6e33519419b2f91c2167ca23"},
-    {file = "envo-0.5.2.tar.gz", hash = "sha256:1baf16ffe85ea19a9523ce83517f3ecfcedf4a77dc70bf3b92374de605415149"},
+    {file = "envo-0.5.3-py3-none-any.whl", hash = "sha256:326d9c426118bbf17c811247dae476cadc8b51442aa7e3d03c267e34435c4670"},
+    {file = "envo-0.5.3.tar.gz", hash = "sha256:b1ab8bf1ef9c6752999b3a68e4c29d6534d322f64851e5baebd7c88680519917"},
 ]
 inotify = [
     {file = "inotify-0.2.10-py2-none-any.whl", hash = "sha256:397f8785450e41f606fe4eb6f5e8e0a1c70b354b56495225fc6c6fe7e07db0c9"},

@@ -30,6 +30,6 @@ stages:
 include:
   - "/comm/.gitlab-ci.yml"
   - "/envo/.gitlab-ci.yml"
-#  - "/pangea/.gitlab-ci.yml"
+  - "/pangea/.gitlab-ci.yml"
 #  - "/rhei/.gitlab-ci.yml"
 #  - "/stickybeak/.gitlab-ci.yml"
