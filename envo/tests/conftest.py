@@ -1,8 +1,12 @@
 import os
+from importlib import import_module, reload
 from pathlib import Path
 
-from envo import Env
+from pexpect import run
 from pytest import fixture
+
+from envo import Env
+from tests.utils import command
 
 test_root = Path(os.path.realpath(__file__)).parent
 envo_root = test_root.parent
@@ -53,5 +57,17 @@ def version() -> None:
 
 
 @fixture
-def prompt() -> bytes:
-    return r"🐣\(sandbox\).*".encode("utf-8")
+def init() -> None:
+    command("test", "--init")
+
+
+@fixture
+def e2e_init() -> None:
+    run("envo test --init")
+
+
+@fixture
+def env() -> Env:
+    reload(import_module("sandbox.env_comm"))
+    env = reload(import_module("sandbox.env_test")).Env()
+    return env

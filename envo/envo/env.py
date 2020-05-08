@@ -14,11 +14,13 @@ class BaseEnv:
     class Meta:
         raw: List[str] = []
 
-    def __init__(self) -> None:
-        if not hasattr(self, "_name"):
+    def __init__(self, name: Optional[str] = None) -> None:
+        if name:
+            self._name = name
+        else:
             self._name = str(self.__class__.__name__)
 
-    # Repeating this code to populate _name without calling super().__init__()
+    # Repeating this code to populate _name without calling super().__init__() in subclasses
     def __post_init__(self) -> None:
         if not hasattr(self, "_name"):
             self._name = str(self.__class__.__name__)
@@ -36,10 +38,13 @@ class BaseEnv:
             if issubclass(type(attr), BaseEnv):
                 attr._validate(parent_name=f"{parent_name}.{f.name}.")
 
+    def get_namespace(self) -> str:
+        return self._name.replace("_", "").upper()
+
     def activate(self, namespace: str = "") -> None:
         self._validate(self._name)
 
-        namespace = f"{namespace}{self._name.replace('_', '')}_".upper()
+        namespace = f"{namespace}{self.get_namespace()}_"
         for f in fields(self):
             var_name: str = f.name
             var = getattr(self, var_name)
@@ -62,10 +67,8 @@ class Env(BaseEnv):
     stage: str
 
     def __init__(self, root: Path, name: Optional[str] = None) -> None:
-        super().__init__()
+        super().__init__(name)
         self.root = root
-        if name:
-            self._name = name
 
     def activate(self, *args: Any, **kwargs: Any) -> None:
         super().activate(*args, **kwargs)
@@ -107,6 +110,9 @@ class Env(BaseEnv):
 
         return Popen(["bash", "--rcfile", f"{bash_rc.name}"])
 
+    def get_name(self) -> str:
+        return self._name
+
 
 @dataclass
 class VenvEnv(BaseEnv):
@@ -118,8 +124,7 @@ class VenvEnv(BaseEnv):
 
     def __init__(self, owner: Env) -> None:
         self.owner = owner
-        self._name = "venv"
-        super().__init__()
+        super().__init__(name="venv")
 
         self.bin = self.owner.root / ".venv/bin"
         self.path = f"""{str(self.bin)}:{os.environ['PATH']}"""

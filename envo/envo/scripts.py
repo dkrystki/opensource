@@ -26,7 +26,7 @@ class Envo:
 
     stage_emoji_mapping: Dict[str, str] = {
         "comm": "",
-        "test": "🛠️",
+        "test": "🛠",
         "local": "🐣",
         "stage": "🤖",
         "prod": "🔥",
@@ -180,6 +180,7 @@ class Envo:
 
         env_file = Path(f"env_{self.se.stage}.py")
         self._create_from_templ(Path("env.py.templ"), env_file)
+        print(f"Created {self.se.stage} environment 🍰!")
 
     def handle_command(self, args: argparse.Namespace) -> None:
         if args.version:
@@ -190,6 +191,7 @@ class Envo:
 
         if args.init:
             self.init_files()
+            return
 
         self._discover_envs()
 

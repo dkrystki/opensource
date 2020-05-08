@@ -1,37 +1,30 @@
 import os
-import sys
 from importlib import import_module, reload
 from pathlib import Path
 
-import envo.scripts
 import pytest
+
+import envo.scripts
 from envo.comm.utils import flake8, mypy
 from tests.utils import command
 
 
-@pytest.mark.usefixtures("mock_exit", "sandbox", "version")
 class TestUnit:
     @pytest.fixture(autouse=True)
-    def setup(self):
-        pass
+    def setup(self, mock_exit, sandbox, version, mocker, capsys):
+        mocker.patch("envo.scripts.Envo._start_files_watchdog")
+        yield
+        captured = capsys.readouterr()
+        assert captured.err == ""
 
-    def test_creating(self):
-        command("test", "--init")
-
+    def test_creating(self, init):
         assert Path("env_comm.py").exists()
         assert Path("env_test.py").exists()
 
         flake8()
         mypy()
 
-    def test_importing(self):
-        command()
-        sys.argv = ["envo", "test", "--init"]
-        envo.scripts._main()
-
-        reload(import_module("sandbox.env_comm"))
-        env = reload(import_module("sandbox.env_test")).Env()
-
+    def test_importing(self, init, env):
         assert str(env) == "sandbox"
         assert env.stage == "test"
         assert env.emoji == envo.scripts.Envo.stage_emoji_mapping[env.stage]
@@ -41,24 +34,26 @@ class TestUnit:
         captured = capsys.readouterr()
         assert captured.out == "1.2.3\n"
 
-    def test_shell(self):
-        command("test", "--init")
+    def test_shell(self, init):
         command("test")
 
-    def test_shell_module_with_the_same_name(self):
-        command("--init")
+    def test_get_name(self, init, env):
+        assert env.get_name() == "sandbox"
+
+    def test_get_namespace(self, init, env):
+        assert env.get_namespace() == "SANDBOX"
+
+    def test_shell_module_with_the_same_name(self, init):
         Path("sandbox").mkdir()
         Path("sandbox/__init__.py").touch()
-        command()
+        command("test")
 
-    def test_dry_run(self, capsys):
-        command("test", "--init")
+    def test_dry_run(self, init, capsys):
         command("test", "--dry-run")
         captured = capsys.readouterr()
         assert captured.out != ""
 
-    def test_save(self, capsys):
-        command("test", "--init")
+    def test_save(self, init, capsys):
         command("test", "--dry-run", "--save")
 
         assert Path(".env_test").exists()
@@ -67,17 +62,15 @@ class TestUnit:
         captured = capsys.readouterr()
         assert captured.out != ""
 
-    def test_activating(self):
-        command("test", "--init")
+    def test_activating(self, init):
         assert os.environ["SANDBOX_STAGE"] == "test"
 
-    def test_init_py_created(self, mocker):
+    def test_init_py_created(self, init, mocker):
         mocker.patch("envo.scripts.Path.unlink")
-        command("test", "--init")
+        command("test")
         assert Path("__init__.py").exists()
 
-    def test_init_py_delete_if_not_exists(self):
-        command("test", "--init")
+    def test_init_py_delete_if_not_exists(self, init):
         assert not Path("__init__.py").exists()
 
     def test_init_untouched_if_exists(self):

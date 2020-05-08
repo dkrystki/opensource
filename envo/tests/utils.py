@@ -4,8 +4,15 @@ import time
 from pathlib import Path
 from threading import Thread
 
+import pexpect
+
+from envo.comm.utils import spawn
+
 test_root = Path(os.path.realpath(__file__)).parent
 envo_root = test_root.parent
+
+
+prompt = r"🛠\(sandbox\).*".encode("utf-8")
 
 
 def command(*args):
@@ -14,6 +21,12 @@ def command(*args):
 
     scripts._main()
     sys.argv = []
+
+
+def shell() -> pexpect.spawn:
+    p = spawn("envo test")
+    p.expect(prompt, timeout=1)
+    return p
 
 
 def change_file(file: Path, delay_s: float, line_n: int, line: str) -> None:
