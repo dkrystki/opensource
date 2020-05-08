@@ -2,19 +2,18 @@ import collections
 import os
 import re
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
-from typing import OrderedDict, Optional, Type
+from typing import OrderedDict
 
-from pangea.env import ClusterEnv
 from jinja2 import Template
-from loguru import logger
-
-from pangea import apps, env
-import pangea
 
 import environ
+import pangea
+from loguru import logger
+from pangea import apps
 from pangea.devops import run
+from pangea.env import ClusterEnv
 from pangea.kube import Namespace
 
 environ = environ.Env()
@@ -31,7 +30,8 @@ class ClusterDevice:
 
     def _post_bootstrap(self) -> None:
         logger.info("Initializing helm")
-        run(f""" 
+        run(
+            f"""
         helm init --wait --tiller-connection-timeout 600
         kubectl apply -f {str(pangea.root / "k8s/ingress-rbac.yaml")}
         kubectl apply -f {str(pangea.root / "k8s/rbac-storage-provisioner.yaml")}
@@ -40,7 +40,9 @@ class ClusterDevice:
             --clusterrole=cluster-admin --serviceaccount=kube-system:tiller
         kubectl --namespace kube-system patch deploy tiller-deploy -p \\
             '{{"spec":{{"template":{{"spec":{{"serviceAccount":"tiller"}} }} }} }}'
-        """, progress_bar=True)
+        """,
+            progress_bar=True,
+        )
 
     def get_ip(self) -> str:
         raise NotImplementedError()
@@ -61,20 +63,26 @@ class Kind(ClusterDevice):
         kind_file.write_text(template.render(**context))
 
         Path(environ.str("KUBECONFIG")).unlink(missing_ok=True)
-        run(f"""
+        run(
+            f"""
             kind delete cluster --name={self.env.device.name}
             kind create cluster --config={str(kind_file)} --name={self.env.device.name}
-            """, progress_bar=True)
+            """,
+            progress_bar=True,
+        )
 
         ip = self.get_ip()
 
-        run(f"""
+        run(
+            f"""
             docker exec {self.env.device.name}-control-plane bash -c "echo \\"{ip} \\
-            {self.env.registry.address}\\" >> /etc/hosts" 
+            {self.env.registry.address}\\" >> /etc/hosts"
             # For some reason dns resolution doesn't work on CI. This line fixes it
             docker exec {self.env.device.name}-control-plane \\
-            bash -c "echo \\"nameserver 8.8.8.8\\" >> /etc/resolv.conf" 
-            """, progress_bar=True)
+            bash -c "echo \\"nameserver 8.8.8.8\\" >> /etc/resolv.conf"
+            """,
+            progress_bar=True,
+        )
 
         self._post_bootstrap()
 
@@ -95,10 +103,11 @@ class Microk8s(ClusterDevice):
         logger.info("Creating microk8s cluster")
 
         self.env.kubeconfig.unlink(missing_ok=True)
-        run(f"""
+        run(
+            f"""
         sudo snap remove microk8s
         sudo snap install microk8s --classic --channel="{self.env.device.k8s_ver}"/stable
-        sudo sed -i "s/local.insecure-registry.io/{self.env.registry.address}/g" \\ 
+        sudo sed -i "s/local.insecure-registry.io/{self.env.registry.address}/g" \\
             /var/snap/microk8s/current/args/containerd-template.toml
         sudo sed -i "s/http:\/\/localhost:32000/http:\/\/{self.env.registry.address}/g" \\
             /var/snap/microk8s/current/args/containerd-template.toml
@@ -114,7 +123,9 @@ class Microk8s(ClusterDevice):
 
         sudo sh -c 'echo "--allow-privileged=true" >> /var/snap/microk8s/current/args/kube-apiserver'
         sudo systemctl restart snap.microk8s.daemon-apiserver.service
-        """, progress_bar=True)
+        """,
+            progress_bar=True,
+        )
 
         time.sleep(30)
 
@@ -131,13 +142,16 @@ class AwsCluster(ClusterDevice):
         self.env.kubeconfig.unlink(missing_ok=True)
 
         run(f"eksctl delete cluster=--name {self.env.device.name}", ignore_errors=True)
-        run(f"""
+        run(
+            f"""
         eksctl create cluster --name={self.env.device.name} --region=ap-southeast-1 --nodegroup-name=standard-workers \\
         --node-type=t3.medium --nodes=1 --nodes-min=1 --nodes-max=1 --ssh-access \\
         --version={self.env.device.k8s_ver[:-2]} \\
          --ssh-public-key=~/.ssh/id_rsa.pub --managed
         eksctl utils write-kubeconfig --cluster={self.env.device.name} --kubeconfig={str(self.env.kubeconfig)}
-        """, print_output=True)
+        """,
+            print_output=True,
+        )
 
         self._post_bootstrap()
 
@@ -148,11 +162,7 @@ class AwsCluster(ClusterDevice):
         return ip.strip()
 
 
-devices = {
-    "kind": Kind,
-    "aws": AwsCluster,
-    "microk8s": Microk8s
-}
+devices = {"kind": Kind, "aws": AwsCluster, "microk8s": Microk8s}
 
 
 class Cluster:
@@ -184,8 +194,9 @@ class Cluster:
 
         self.namespaces = collections.OrderedDict()
 
-        self.python = apps.PythonUtils(se=apps.PythonUtils.Sets(root=self.env.root),
-                                       li=apps.PythonUtils.Links())
+        self.python = apps.PythonUtils(
+            se=apps.PythonUtils.Sets(root=self.env.root), li=apps.PythonUtils.Links()
+        )
 
         self.system = self.create_namespace("system")
         if self.se.deploy_ingress:
@@ -206,13 +217,7 @@ class Cluster:
         os.chdir(str(self.env.root))
 
     def create_namespace(self, name) -> Namespace:
-        namespace = Namespace(
-
-            li=Namespace.Links(
-                env=self.env,
-            ),
-            name=name
-        )
+        namespace = Namespace(li=Namespace.Links(env=self.env,), name=name)
         self.namespaces[name] = namespace
         return namespace
 
@@ -260,83 +265,98 @@ class Cluster:
         self.chdir_to_project_root()
         logger.info("Installing helm")
 
-        if (Path(self.env.deps_dir)/"helm").exists():
+        if (Path(self.env.deps_dir) / "helm").exists():
             logger.info("Already exists, passing.")
             return
 
         release_name = f"helm-v{self.env.helm_ver}-linux-386"
-        run(f"""
+        run(
+            f"""
             cd /tmp
             curl -Lso helm.tar.gz https://get.helm.sh/{release_name}.tar.gz
             tar -zxf helm.tar.gz
             mv linux-386/helm {self.env.deps_dir}/helm
-            """, progress_bar=True)
+            """,
+            progress_bar=True,
+        )
         logger.info("Done")
 
     def install_kind(self) -> None:
         self.chdir_to_project_root()
         logger.info("Installing kind")
 
-        if (Path(self.env.deps_dir)/"kind").exists():
+        if (Path(self.env.deps_dir) / "kind").exists():
             logger.info("Already exists, passing.")
             return
 
-        run(f"""
+        run(
+            f"""
             cd /tmp
             curl -Lso kind \\
                 "https://github.com/kubernetes-sigs/kind/releases/download/v{self.env.kind_ver}/kind-$(uname)-amd64"
             chmod +x kind
             mv kind {self.env.deps_dir}/kind
-            """, progress_bar=True)
+            """,
+            progress_bar=True,
+        )
 
     def install_kubectl(self) -> None:
         self.chdir_to_project_root()
         logger.info("Installing kubectl")
 
-        if (Path(self.env.deps_dir)/"kubectl").exists():
+        if (Path(self.env.deps_dir) / "kubectl").exists():
             logger.info("Already exists, passing.")
             return
 
-        run(f"""
+        run(
+            f"""
             cd /tmp
             curl -Lso kubectl \\
             "https://storage.googleapis.com/kubernetes-release/release/v{self.env.kubectl_ver}/bin/linux/amd64/kubectl"
             chmod +x kubectl
             mv kubectl {self.env.deps_dir}/kubectl
-            """, progress_bar=True)
+            """,
+            progress_bar=True,
+        )
         logger.info("Done")
 
     def install_skaffold(self) -> None:
         self.chdir_to_project_root()
         logger.info("Installing skaffold")
 
-        if (Path(self.env.deps_dir)/"skaffold").exists():
+        if (Path(self.env.deps_dir) / "skaffold").exists():
             logger.info("Already exists, passing.")
             return
 
-        run(f"""
+        run(
+            f"""
             cd /tmp
             curl -Lso skaffold \\
                 "https://storage.googleapis.com/skaffold/releases/v{self.env.skaffold_ver}/skaffold-linux-amd64"
             chmod +x skaffold
             mv skaffold {self.env.deps_dir}/skaffold
-            """, progress_bar=True)
+            """,
+            progress_bar=True,
+        )
         logger.info("Done")
 
     def install_hostess(self) -> None:
         self.chdir_to_project_root()
         logger.info("Installing hostess")
 
-        if (Path(self.env.deps_dir)/"hostess").exists():
+        if (Path(self.env.deps_dir) / "hostess").exists():
             logger.info("Already exists, passing.")
             return
 
-        run(f"""
+        run(
+            f"""
             cd /tmp
             curl -Lso hostess https://github.com/cbednarski/hostess/releases/download/v0.3.0/hostess_linux_386
             chmod u+x hostess
             mv hostess {self.env.deps_dir}/hostess
-            """, progress_bar=True)
+            """,
+            progress_bar=True,
+        )
         logger.info("Done")
 
     def bootstrap(self) -> None:

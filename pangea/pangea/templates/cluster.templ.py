@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import fire
 
 from dataclasses import dataclass
@@ -27,7 +29,9 @@ class {{ class_name }}(cluster.Cluster):
 
 def get_current_cluster() -> {{ class_name }}:
     import os
-    env = import_module(f"env_{os.environ['CG_STAGE']}").Env()
+    comm = import_module(f"env_comm").Env()
+    stage = os.environ[f'{comm.}_STAGE']
+    env = import_module(f"env_{stage}").Env()
 
     current_cluster = {{ class_name }}(li={{ class_name }}.Links(),
                                        se={{ class_name }}.Sets(deploy_ingress=True),

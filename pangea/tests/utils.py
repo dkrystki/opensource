@@ -1,7 +1,7 @@
 import sys
 
 
-def pg(*args):
+def command(*args):
     sys.argv = ("pangea",) + args
     from pangea import scripts
 

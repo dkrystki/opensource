@@ -4,27 +4,40 @@ repos:
       # comm
       - id: comm-isort
         name: "Comm: Sort imports."
-        entry: .bin/isort
+        entry: .bin/os.isort
         language: script
         files: 'comm/.*.py'
 
       - id: comm-black
         name: "Comm: Make it black."
-        entry: .bin/black
+        entry: .bin/os.black
+        language: script
+        files: 'comm/.*.py'
+
+      - id: comm-autoflake
+        name: "Comm: Autoflake."
+        entry: .bin/os.autoflake
         language: script
         files: 'comm/.*.py'
 
       # envo
       - id: envo-isort
         name: "Envo: sort imports."
-        entry: .bin/isort
+        entry: .bin/os.isort
         language: script
         files: 'envo/.*.py'
         exclude: "envo/templates"
 
       - id: envo-black
         name: "Envo: Make it black."
-        entry: .bin/black
+        entry: .bin/os.black
+        language: script
+        files: 'envo/.*.py'
+        exclude: "envo/templates"
+
+      - id: envo-autoflake
+        name: "Envo: Autoflake."
+        entry: .bin/os.autoflake
         language: script
         files: 'envo/.*.py'
         exclude: "envo/templates"
@@ -32,14 +45,21 @@ repos:
       # pangea
       - id: pangea-isort
         name: "Pangea: sort imports."
-        entry: .bin/isort
+        entry: .bin/os.isort
         language: script
         files: 'pangea/.*.py'
         exclude: "pangea/templates"
 
       - id: pangea-black
         name: "Pangea: Make it black."
-        entry: .bin/black
+        entry: .bin/os.black
+        language: script
+        files: 'pangea/.*.py'
+        exclude: "pangea/templates"
+
+      - id: pangea-autoflake
+        name: "Pangea: Autoflake."
+        entry: .bin/os.autoflake
         language: script
         files: 'pangea/.*.py'
         exclude: "pangea/templates"
@@ -47,14 +67,14 @@ repos:
       # rhei
       - id: rhei-isort
         name: "Rhei: sort imports."
-        entry: .bin/isort
+        entry: .bin/os.isort
         language: script
         files: 'rhei/.*.py'
         exclude: "rhei/templates"
 
       - id: rhei-black
         name: "Rhei: Make it black."
-        entry: .bin/black
+        entry: .bin/os.black
         language: script
         files: 'rhei/.*.py'
         exclude: "rhei/templates"
@@ -62,14 +82,14 @@ repos:
       # stickybeak
       - id: stickybeak-isort
         name: "Stickybeak: sort imports."
-        entry: .bin/isort
+        entry: .bin/os.isort
         language: script
         files: 'stickybeak/.*.py'
         exclude: "stickybeak/templates"
 
       - id: stickybeak-black
         name: "Stickybeak: Make it black."
-        entry: .bin/black
+        entry: .bin/os.black
         language: script
         files: 'stickybeak/.*.py'
         exclude: "stickybeak/templates"

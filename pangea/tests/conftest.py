@@ -17,3 +17,14 @@ pytest_plugins = [
 @fixture
 def envo_prompt() -> bytes:
     return r"🐣\(sandbox\).*".encode("utf-8")
+
+
+@fixture
+def version() -> None:
+    file = root / "pangea/__version__.py"
+    file.touch()
+    file.write_text('__version__ = "1.2.3"')
+
+    yield
+
+    file.unlink()

@@ -32,8 +32,11 @@ class Pangea:
 
         # render cluster.py
         context = {"class_name": class_name, "cluster_name": cluster_name}
-        self._render_py_file("cluster.templ.py", Path("cluster.py"), context)
+        cluster_file = Path("cluster.py")
+        self._render_py_file("cluster.templ.py", cluster_file, context)
         self._render_py_file("env_comm.templ.py", Path("env_comm.py"), context)
+
+        cluster_file.chmod(0o777)
 
         # render env_local
         env_templ_context = context.copy()
@@ -46,6 +49,12 @@ class Pangea:
         Path(".bin").mkdir()
 
     def handle_command(self, args: argparse.Namespace) -> None:
+        if args.version:
+            from pangea.__version__ import __version__
+
+            print(__version__)
+            return
+
         if args.init:
             self.create_cluster()
 
@@ -53,6 +62,7 @@ class Pangea:
 def _main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--init", default=False, action="store_true")
+    parser.add_argument("--version", default=False, action="store_true")
 
     args = parser.parse_args(sys.argv[1:])
 

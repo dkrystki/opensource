@@ -2,13 +2,11 @@ import os
 import re
 import sys
 from getpass import getpass
-from typing import List, Optional
-
-import pexpect
-from loguru import logger
-
+from typing import List
 
 import environ
+import pexpect
+from loguru import logger
 from tqdm import tqdm
 
 environ = environ.Env()
@@ -38,7 +36,12 @@ class CustomPrint:
         self.old_stdout.flush()
 
 
-def run(command: str, ignore_errors: bool = False, print_output: bool = False, progress_bar: bool = False) -> List[str]:
+def run(
+    command: str,
+    ignore_errors: bool = False,
+    print_output: bool = False,
+    progress_bar: bool = False,
+) -> List[str]:
     # preprocess
     # join multilines
     command = re.sub(r"\\(?:\t| )*\n(?:\t| )*", "", command)

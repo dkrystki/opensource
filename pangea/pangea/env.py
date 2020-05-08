@@ -1,7 +1,7 @@
 import os
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import List
 
 import envo
 
@@ -24,7 +24,7 @@ class AppEnv(envo.Env):
         self.comm = self.root / "comm"
         self.bin_path = self.root / Path(".bin")
 
-        self.path = os.environ['PATH']
+        self.path = os.environ["PATH"]
         self.path = f"{str(self.bin_path)}:{self.path}"
 
         self.pythonpath = f"{str(self.root)}/comm/python"
@@ -72,7 +72,7 @@ class ClusterEnv(envo.Env):
         self.kubeconfig = self.root / f"envs/{self.stage}/kubeconfig.yaml"
         self.comm = self.root / "comm"
 
-        self.path = os.environ['PATH']
+        self.path = os.environ["PATH"]
         self.path = f"{str(self.deps_dir)}:{self.path}"
         self.path = f"{str(self.bin_dir)}:{self.path}"
 
