@@ -106,7 +106,6 @@ class Envo:
 
     def _discover_envs(self) -> None:
         path = Path(".").absolute()
-        sys.path = [p for p in sys.path if "site-packages" in p]
         while True:
             if (path / "env_comm.py").exists():
                 self.env_root = path

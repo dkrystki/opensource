@@ -4,12 +4,13 @@ from pathlib import Path
 import pexpect
 import pytest
 
-import pangea.scripts
+from pangea.comm.utils import flake8, mypy, spawn
+from tests.utils import pg
 
 
-@pytest.mark.usefixtures("in_sandbox")
+@pytest.mark.usefixtures("sandbox")
 class TestUnit:
-    def test_creating(self, pg, flake8, mypy):
+    def test_creating(self):
         pg("--init")
 
         assert Path("cluster.py").exists()
@@ -21,7 +22,7 @@ class TestUnit:
         flake8()
         # mypy()
 
-    def test_bootstrap(self, pg):
+    def test_bootstrap(self):
         pg("--init")
 
         assert Path("cluster.py").exists()
@@ -33,10 +34,9 @@ class TestUnit:
         # mypy()
 
 
-@pytest.mark.usefixtures("in_sandbox")
 class TestE2e:
     @pytest.fixture(autouse=True)
-    def setup(self, prompt, envo_prompt, , spawn):
+    def setup(self, prompt, envo_prompt, sandbox):
         self.prompt = prompt
         self.envo_prompt = envo_prompt
 

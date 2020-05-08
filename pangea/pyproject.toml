@@ -13,9 +13,8 @@ loguru = "^0.4.1"
 fire = "^0.3.1"
 flake8 = "^3.7.9"
 jinja2 = "^2.11.2"
-plasma-comm = "^0.1.6"
 black = "^19.10b0"
-envo = "^0.4.8"
+envo = "^0.5.2"
 
 [tool.poetry.dev-dependencies]
 flake8 = "^3.7.9"

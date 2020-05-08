@@ -88,12 +88,11 @@ description = "Smart Environment variables - Define environmental variables in p
 name = "envo"
 optional = false
 python-versions = ">=3.6.1,<4.0"
-version = "0.4.8"
+version = "0.5.2"
 
 [package.dependencies]
 inotify = "*"
 jinja2 = ">=2,<3"
-plasma-comm = ">=0.1.6,<0.2.0"
 
 [[package]]
 category = "main"
@@ -271,14 +270,6 @@ version = "4.8.0"
 ptyprocess = ">=0.5"
 
 [[package]]
-category = "main"
-description = "Common code for plasma opensource packages."
-name = "plasma-comm"
-optional = false
-python-versions = ">=3.6.1,<4.0"
-version = "0.1.6"
-
-[[package]]
 category = "dev"
 description = "plugin and hook calling mechanisms for python"
 name = "pluggy"
@@ -431,7 +422,7 @@ version = "1.0.1"
 dev = ["pytest (>=4.6.2)", "black (>=19.3b0)"]
 
 [metadata]
-content-hash = "0545e1336a3b95863395a8dd9d922a55f2b7edd02f1a2678e18481b70b93c66f"
+content-hash = "b9f26088371133b2397410ea37e7bd98859681d0d18dd5dcb46b08a9c3a5454f"
 python-versions = "^3.8.2"
 
 [metadata.files]
@@ -468,8 +459,8 @@ entrypoints = [
     {file = "entrypoints-0.3.tar.gz", hash = "sha256:c70dd71abe5a8c85e55e12c19bd91ccfeec11a6e99044204511f9ed547d48451"},
 ]
 envo = [
-    {file = "envo-0.4.8-py3-none-any.whl", hash = "sha256:57445abba39a387e771cd99e8f20fd5f1ba2bb74686884c321d0440c6ec33d39"},
-    {file = "envo-0.4.8.tar.gz", hash = "sha256:2ae990e82d4035368196425af53184a0c6eae65154d8906a9209bc16413f0c5c"},
+    {file = "envo-0.5.2-py3-none-any.whl", hash = "sha256:09f1b36af0caacf74bf6937d894480da2b9c067e6e33519419b2f91c2167ca23"},
+    {file = "envo-0.5.2.tar.gz", hash = "sha256:1baf16ffe85ea19a9523ce83517f3ecfcedf4a77dc70bf3b92374de605415149"},
 ]
 fire = [
     {file = "fire-0.3.1.tar.gz", hash = "sha256:9736a16227c3d469e5d2d296bce5b4d8fa8d7851e953bda327a455fc2994307f"},
@@ -577,10 +568,6 @@ pep8-naming = [
 pexpect = [
     {file = "pexpect-4.8.0-py2.py3-none-any.whl", hash = "sha256:0b48a55dcb3c05f3329815901ea4fc1537514d6ba867a152b581d69ae3710937"},
     {file = "pexpect-4.8.0.tar.gz", hash = "sha256:fc65a43959d153d0114afe13997d439c22823a27cefceb5ff35c2178c6784c0c"},
-]
-plasma-comm = [
-    {file = "plasma-comm-0.1.6.tar.gz", hash = "sha256:0a0c6eb3bb1809a7ff5722d7e3ef98e583ec0755bae83de16d62bffebe511f97"},
-    {file = "plasma_comm-0.1.6-py3-none-any.whl", hash = "sha256:e0468996fc4ff78e43f73807641f7f6a6288f85dd1018237b90b34fe909a2cb6"},
 ]
 pluggy = [
     {file = "pluggy-0.13.1-py2.py3-none-any.whl", hash = "sha256:966c145cd83c96502c3c3868f50408687b38434af77734af1e9ca461a4081d2d"},

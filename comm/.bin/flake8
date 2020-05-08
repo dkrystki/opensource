@@ -2,4 +2,4 @@ set -eou pipefail
 
 cd $COMM_ROOT
 
-./"$COMM_VENV_BIN"/flake8
+"$COMM_VENV_BIN"/flake8

@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from envo import Path
+from pathlib import Path
 from pangea.env import ClusterEnv
 
 import os

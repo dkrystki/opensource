@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "envo"
-version = "0.5.2"
+version = "0.5.3"
 description = "Smart Environment variables - Define environmental variables in python and activate hot reloaded shells for them."
 authors = ["Damian Krystkiewicz <damian.krystkiewicz@gmail.com>"]
 classifiers = [

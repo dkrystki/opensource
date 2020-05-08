@@ -63,12 +63,11 @@ description = "Smart Environment variables - Define environmental variables in p
 name = "envo"
 optional = false
 python-versions = ">=3.6.1,<4.0"
-version = "0.4.9"
+version = "0.5.2"
 
 [package.dependencies]
 inotify = "*"
 jinja2 = ">=2,<3"
-plasma-comm = ">=0.1.6,<0.2.0"
 
 [package.dependencies.dataclasses]
 python = ">=3.6,<3.7"
@@ -139,14 +138,6 @@ version = "0.8.0"
 
 [[package]]
 category = "main"
-description = "Common code for plasma opensource packages."
-name = "plasma-comm"
-optional = false
-python-versions = ">=3.6.1,<4.0"
-version = "0.1.7"
-
-[[package]]
-category = "main"
 description = "Alternative regular expression module, to replace re."
 name = "regex"
 optional = false
@@ -170,7 +161,7 @@ python-versions = "*"
 version = "1.4.1"
 
 [metadata]
-content-hash = "839cd290c4bdaf05aa4090169a1b7deff5e73e1b2cdf4407acb039cd62d42dce"
+content-hash = "7ae547901d5db4e28ec463ca24084810056c91dbe61e6d810bf47e61d6bbe52b"
 python-versions = ">=3.6.1, <4.0"
 
 [metadata.files]
@@ -195,8 +186,8 @@ dataclasses = [
     {file = "dataclasses-0.7.tar.gz", hash = "sha256:494a6dcae3b8bcf80848eea2ef64c0cc5cd307ffc263e17cdf42f3e5420808e6"},
 ]
 envo = [
-    {file = "envo-0.4.9-py3-none-any.whl", hash = "sha256:0c1dc6ce78144d06ece2e002c077d06c5713be434b09010a00968f20f20ed0cd"},
-    {file = "envo-0.4.9.tar.gz", hash = "sha256:d7ac1e39a00ff2d9d0625aa4303f6ed7d7a1d6e43a6ac2b261fd6ac556f5b9e1"},
+    {file = "envo-0.5.2-py3-none-any.whl", hash = "sha256:09f1b36af0caacf74bf6937d894480da2b9c067e6e33519419b2f91c2167ca23"},
+    {file = "envo-0.5.2.tar.gz", hash = "sha256:1baf16ffe85ea19a9523ce83517f3ecfcedf4a77dc70bf3b92374de605415149"},
 ]
 inotify = [
     {file = "inotify-0.2.10-py2-none-any.whl", hash = "sha256:397f8785450e41f606fe4eb6f5e8e0a1c70b354b56495225fc6c6fe7e07db0c9"},
@@ -253,10 +244,6 @@ nose = [
 pathspec = [
     {file = "pathspec-0.8.0-py2.py3-none-any.whl", hash = "sha256:7d91249d21749788d07a2d0f94147accd8f845507400749ea19c1ec9054a12b0"},
     {file = "pathspec-0.8.0.tar.gz", hash = "sha256:da45173eb3a6f2a5a487efba21f050af2b41948be6ab52b6a1e3ff22bb8b7061"},
-]
-plasma-comm = [
-    {file = "plasma-comm-0.1.7.tar.gz", hash = "sha256:ee6dceeb0566135e4fbd7edec2160a5c63634af0b9f036bb5fb0c20fc5d71fb3"},
-    {file = "plasma_comm-0.1.7-py3-none-any.whl", hash = "sha256:13cd4aad8dad5509ffbc3eeae221403d8f50ae5a69e0ca468e3e8dc1e74fd1dd"},
 ]
 regex = [
     {file = "regex-2020.4.4-cp27-cp27m-win32.whl", hash = "sha256:90742c6ff121a9c5b261b9b215cb476eea97df98ea82037ec8ac95d1be7a034f"},
