@@ -1,18 +1,17 @@
 import os
 from dataclasses import dataclass
 
-from envo import Env, Path, VenvEnv
+from envo import Env, Parent, Path, Raw, VenvEnv
+from opensource.env_comm import OpensourceEnvComm
 
 
 @dataclass
 class CommEnvComm(Env):
-    class Meta:
-        raw = ["pythonpath", "path"]
-
     venv: VenvEnv
-    pythonpath: str
+    pythonpath: Raw[str]
     bin_dir: Path
-    path: str
+    path: Raw[str]
+    parent: Parent[OpensourceEnvComm]
 
     def __init__(self) -> None:
         super().__init__(root=Path(os.path.realpath(__file__)).parent)

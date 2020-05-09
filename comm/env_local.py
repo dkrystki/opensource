@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
-from .env_comm import CommEnvComm
+from opensource.comm.env_comm import CommEnvComm
+from opensource.env_local import OpensourceEnv
 
 
 @dataclass
@@ -9,6 +10,8 @@ class CommEnv(CommEnvComm):
         self.emoji = "🐣"
         self.stage = "local"
         super().__init__()
+
+        self.parent = OpensourceEnv()
 
 
 Env = CommEnv

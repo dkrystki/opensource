@@ -2,14 +2,11 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
-from envo import Env, VenvEnv, BaseEnv
+from envo import Env, VenvEnv, BaseEnv, Raw
 
 
 @dataclass
 class OpensourceEnvComm(Env):
-    class Meta:
-        raw = ["path"]
-
     @dataclass
     class Package(BaseEnv):
         root: Path
@@ -19,7 +16,7 @@ class OpensourceEnvComm(Env):
     pangea: Package
     rhei: Package
     stickybeak: Package
-    path: str
+    path: Raw[str]
     bin_dir: Path
 
     def __init__(self) -> None:
