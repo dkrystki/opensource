@@ -30,6 +30,17 @@ docs = ["sphinx", "zope.interface"]
 tests = ["coverage", "hypothesis", "pympler", "pytest (>=4.3.0)", "six", "zope.interface"]
 
 [[package]]
+category = "main"
+description = "Removes unused imports and unused variables"
+name = "autoflake"
+optional = false
+python-versions = "*"
+version = "1.3.1"
+
+[package.dependencies]
+pyflakes = ">=1.1.0"
+
+[[package]]
 category = "dev"
 description = "The uncompromising code formatter."
 name = "black"
@@ -390,7 +401,7 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 version = "2.5.0"
 
 [[package]]
-category = "dev"
+category = "main"
 description = "passive checker of Python programs"
 name = "pyflakes"
 optional = false
@@ -549,7 +560,7 @@ docs = ["sphinx", "jaraco.packaging (>=3.2)", "rst.linker (>=1.9)"]
 testing = ["jaraco.itertools", "func-timeout"]
 
 [metadata]
-content-hash = "a1c12212d1a2bb42f8450889d8c0c45c5dbac52df7776c700655dcab48279ea8"
+content-hash = "dd4e1834df52c57245b536d33744e20e0144bde71a9a737dc4d68f2d69e1c9da"
 python-versions = ">=3.6.1, <4.0"
 
 [metadata.files]
@@ -564,6 +575,9 @@ atomicwrites = [
 attrs = [
     {file = "attrs-19.3.0-py2.py3-none-any.whl", hash = "sha256:08a96c641c3a74e44eb59afb61a24f2cb9f4d7188748e76ba4bb5edfa3cb7d1c"},
     {file = "attrs-19.3.0.tar.gz", hash = "sha256:f7b7ce16570fe9965acd6d30101a28f62fb4a7f9e926b3bbc9b61f8b04247e72"},
+]
+autoflake = [
+    {file = "autoflake-1.3.1.tar.gz", hash = "sha256:680cb9dade101ed647488238ccb8b8bfb4369b53d58ba2c8cdf7d5d54e01f95b"},
 ]
 black = [
     {file = "black-19.10b0-py36-none-any.whl", hash = "sha256:1b30e59be925fafc1ee4565e5e08abef6b03fe455102883820fe5ee2e4734e0b"},

@@ -3,7 +3,20 @@ from dataclasses import dataclass, fields
 from pathlib import Path
 from subprocess import Popen
 from tempfile import NamedTemporaryFile
-from typing import Any, List, Optional
+from typing import TYPE_CHECKING, Any, Generic, List, Optional, TypeVar, Union
+
+T = TypeVar("T")
+
+if TYPE_CHECKING:
+    Raw = Union[T]
+    Parent = Union[T]
+else:
+
+    class Raw(Generic[T]):
+        pass
+
+    class Parent(Generic[T]):
+        pass
 
 
 @dataclass
@@ -13,6 +26,7 @@ class BaseEnv:
 
     class Meta:
         raw: List[str] = []
+        parent: Optional[str] = None
 
     def __init__(self, name: Optional[str] = None) -> None:
         if name:
@@ -51,7 +65,10 @@ class BaseEnv:
             if isinstance(var, BaseEnv):
                 var.activate(namespace=namespace)
             else:
-                is_raw = var_name in self.Meta.raw
+                if hasattr(f.type, "__origin__"):
+                    is_raw = f.type.__origin__ == Raw
+                else:
+                    is_raw = False
                 os.environ[f"{namespace if not is_raw else''}{var_name.upper()}"] = str(
                     var
                 )
@@ -116,10 +133,7 @@ class Env(BaseEnv):
 
 @dataclass
 class VenvEnv(BaseEnv):
-    class Meta:
-        raw: List[str] = ["path"]
-
-    path: str
+    path: Raw[str]
     bin: Path
 
     def __init__(self, owner: Env) -> None:

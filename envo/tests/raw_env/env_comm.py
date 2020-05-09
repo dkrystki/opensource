@@ -2,22 +2,16 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
-from envo import BaseEnv, Env
+from envo import BaseEnv, Env, Raw
 
 
 @dataclass
 class RawEnvComm(Env):
     @dataclass
     class SomeEnvGroup(BaseEnv):
-        class Meta:
-            raw = ["nested"]
+        nested: Raw[str]
 
-        nested: str
-
-    class Meta:
-        raw = ["not_nested"]
-
-    not_nested: str
+    not_nested: Raw[str]
     group: SomeEnvGroup
 
     def __init__(self) -> None:
