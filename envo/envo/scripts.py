@@ -34,8 +34,7 @@ class Envo:
     root: Path
     stage: str
     templates_dir: Path
-    env_dir: Path
-    package_name: str
+    env_dirs: List[Path]
     selected_addons: List[str]
     addons: List[str]
 
@@ -46,8 +45,7 @@ class Envo:
         self.addons = ["venv"]
         self.templates_dir = self.root / "templates"
 
-        self.env_dir = Path(".").absolute()
-        self.package_name = self.env_dir.name
+        self.env_dirs = []
 
         unknown_addons = [a for a in self.se.addons if a not in self.addons]
         if unknown_addons:
@@ -61,7 +59,6 @@ class Envo:
         self.source_changed = False
 
         self._envs_before: Dict[str, Any] = os.environ.copy()
-        self.env_root = Path(".").absolute()
 
     def spawn_shell(self) -> None:
         if self.shell_proc:
@@ -99,51 +96,61 @@ class Envo:
                 print("Reloaded")
 
     def _start_files_watchdog(self) -> None:
-        self.inotify.add_watch(str(self.env_dir / "env_comm.py"))
-        self.inotify.add_watch(str(self.env_dir / f"env_{self.se.stage}.py"))
+        for d in self.env_dirs:
+            comm_env_file = d / "env_comm.py"
+            env_file = d / f"env_{self.se.stage}.py"
+            self.inotify.add_watch(str(comm_env_file))
+            self.inotify.add_watch(str(env_file))
+
         self.files_watchdog_thread = Thread(target=self._files_watchdog)
         self.files_watchdog_thread.start()
 
     def _discover_envs(self) -> None:
         path = Path(".").absolute()
         while True:
-            if (path / "env_comm.py").exists():
-                self.env_root = path
+            env_file = path / f"env_{self.se.stage}.py"
+            if env_file.exists():
+                self.env_dirs.append(path)
                 sys.path.append(str(path.parent))
-                break
             else:
                 if path == Path("/"):
-                    raise RuntimeError("""Can't find "env_comm.py" """)
-                path = path.parent
+                    break
+            path = path.parent
 
-        self.env_dir = path
-        self.package_name = self.env_dir.name
+        if not self.env_dirs:
+            raise RuntimeError("""Can't find "env_comm.py" """)
+
+    def _create_init_files(self) -> None:
+        for d in self.env_dirs:
+            init_file = d / Path("__init__.py")
+            if not init_file.exists():
+                init_file.touch()
+                init_file.write_text("# __envo_delete__")
+
+    def _delete_init_files(self) -> None:
+        for d in self.env_dirs:
+            init_file = d / Path("__init__.py")
+            if init_file.read_text() == "# __envo_delete__":
+                init_file.unlink()
 
     def get_env(self) -> Env:
-        package = self.env_dir.name
+        package = self.env_dirs[0].name
         env_name = f"env_{self.se.stage}"
         module_name = f"{package}.{env_name}"
         comm_module_name = f"{package}.env_comm"
 
-        init_file = self.env_root / "__init__.py"
-
-        if init_file.exists():
-            init_exists = True
-        else:
-            init_exists = False
-            init_file.touch()
+        self._create_init_files()
 
         try:
-            reload(import_module(comm_module_name, package=package))
+            reload(import_module(comm_module_name))
             env: Env
-            env = reload(import_module(module_name, package=package)).Env()  # type: ignore
+            env = reload(import_module(module_name)).Env()  # type: ignore
             return env
         except ImportError as exc:
             print(f"""Couldn't import "{module_name}" ({exc}).""")
             raise
         finally:
-            if not init_exists and init_file.exists():
-                init_file.unlink()
+            self._delete_init_files()
 
     def _create_from_templ(
         self, templ_file: Path, output_file: Path, is_comm: bool = False
@@ -155,11 +162,12 @@ class Envo:
             exit(1)
 
         output_file.touch()
-
-        class_name = comm.dir_name_to_class_name(self.package_name) + "Env"
+        package_name = Path(".").absolute().name
+        class_name = comm.dir_name_to_class_name(package_name) + "Env"
         context = {
             "class_name": class_name,
-            "name": self.package_name,
+            "name": package_name,
+            "package_name": package_name,
             "stage": self.se.stage,
             "emoji": self.stage_emoji_mapping[self.se.stage],
             "selected_addons": self.se.addons,

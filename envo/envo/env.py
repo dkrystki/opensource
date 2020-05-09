@@ -55,23 +55,24 @@ class BaseEnv:
     def get_namespace(self) -> str:
         return self._name.replace("_", "").upper()
 
-    def activate(self, namespace: str = "") -> None:
+    def activate(self, owner_namespace: str = "") -> None:
         self._validate(self._name)
-
-        namespace = f"{namespace}{self.get_namespace()}_"
         for f in fields(self):
-            var_name: str = f.name
-            var = getattr(self, var_name)
-            if isinstance(var, BaseEnv):
-                var.activate(namespace=namespace)
+            if hasattr(f.type, "__origin__") and (
+                f.type.__origin__ == Raw or f.type.__origin__ == Parent
+            ):
+                namespace = ""
+                var_name = f.name.upper()
             else:
-                if hasattr(f.type, "__origin__"):
-                    is_raw = f.type.__origin__ == Raw
-                else:
-                    is_raw = False
-                os.environ[f"{namespace if not is_raw else''}{var_name.upper()}"] = str(
-                    var
-                )
+                namespace = f"{owner_namespace}{self.get_namespace()}_"
+                var_name = namespace + f.name.replace("_", "").upper()
+
+            var = getattr(self, f.name)
+
+            if isinstance(var, BaseEnv):
+                var.activate(owner_namespace=namespace)
+            else:
+                os.environ[var_name] = str(var)
 
     def __str__(self) -> str:
         return self._name
@@ -123,12 +124,27 @@ class Env(BaseEnv):
         content = ";\n".join(self.as_string(add_export=True))
         bash_rc.write(content)
         bash_rc.write("\n")
-        bash_rc.write(f"PS1={self.emoji}\\({self._name}\\)$PS1\n")
+
+        bash_rc.write(f"PS1={self.emoji}\\({self.get_full_name()}\\)$PS1\n")
 
         return Popen(["bash", "--rcfile", f"{bash_rc.name}"])
 
     def get_name(self) -> str:
         return self._name
+
+    def get_full_name(self) -> str:
+        parent = self.get_parent()
+        if parent:
+            return parent.get_full_name() + "." + self.get_name()
+        else:
+            return self.get_name()
+
+    def get_parent(self) -> Optional["Env"]:
+        for f in fields(self):
+            if hasattr(f.type, "__origin__") and f.type.__origin__ == Parent:
+                ret: "Env" = getattr(self, f.name)
+                return ret
+        return None
 
 
 @dataclass

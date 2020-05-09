@@ -25,7 +25,7 @@ def command(*args):
 
 def shell() -> pexpect.spawn:
     p = spawn("envo test")
-    p.expect(prompt, timeout=1)
+    p.expect(prompt, timeout=2)
     return p
 
 

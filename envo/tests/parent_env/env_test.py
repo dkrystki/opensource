@@ -1,10 +1,10 @@
 from dataclasses import dataclass
 
-from .env_comm import ParentEnvComm
+from parent_env.env_comm import ParentEnvComm
 
 
 @dataclass
-class RawEnv(ParentEnvComm):
+class ParentEnv(ParentEnvComm):
     def __init__(self) -> None:
         self.stage = "test"
         self.emoji = "🛠️"
@@ -14,4 +14,4 @@ class RawEnv(ParentEnvComm):
         self.test_parent_var = "test_value"
 
 
-Env = RawEnv
+Env = ParentEnv

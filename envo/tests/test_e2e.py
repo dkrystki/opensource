@@ -5,7 +5,7 @@ import pytest
 from pexpect import run
 
 from envo.comm.utils import spawn
-from tests.utils import change_file, prompt, shell
+from tests.utils import change_file, prompt, shell, test_root
 
 
 class TestE2e:
@@ -44,7 +44,7 @@ class TestE2e:
 
         change_file(Path("env_comm.py"), 0.5, 14, '        self._name = "new"\n')
         new_prompt = prompt.replace(b"sandbox", b"new")
-        self.shell.expect(new_prompt, timeout=1)
+        self.shell.expect(new_prompt, timeout=2)
 
         self.shell.sendline("echo $NEW_STAGE")
         self.shell.expect("test", timeout=1)
@@ -113,3 +113,9 @@ class TestE2e:
 
         self.shell.sendline("bash script.sh")
         self.shell.expect(str(Path(".").absolute()), timeout=1)
+
+    def test_child_parent_prompt(self):
+        os.chdir(test_root / "parent_env/child_env")
+
+        s = spawn("envo test")
+        s.expect(r"🛠\(pa.ch\).*".encode("utf-8"), timeout=2)

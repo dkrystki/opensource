@@ -6,13 +6,16 @@ import pytest
 
 import envo.scripts
 from envo.comm.utils import flake8, mypy
-from tests.utils import command
+from tests.utils import command, test_root
+
+environ_before = os.environ.copy()
 
 
 class TestUnit:
     @pytest.fixture(autouse=True)
     def setup(self, mock_exit, sandbox, version, mocker, capsys):
         mocker.patch("envo.scripts.Envo._start_files_watchdog")
+        os.environ = environ_before.copy()
         yield
         captured = capsys.readouterr()
         assert captured.err == ""
@@ -62,7 +65,8 @@ class TestUnit:
         captured = capsys.readouterr()
         assert captured.out != ""
 
-    def test_activating(self, init):
+    def test_activating(self, init, env):
+        env.activate()
         assert os.environ["SANDBOX_STAGE"] == "test"
 
     def test_init_py_created(self, init, mocker):
@@ -109,5 +113,23 @@ class TestUnit:
         flake8()
         mypy()
 
-    def test_parents(self):
-        pass
+    def test_parents(self, child_env):
+        os.chdir(test_root)
+        parent_dir = Path(".").absolute() / "parent_env"
+        child_dir = Path(".").absolute() / "parent_env/child_env"
+
+        os.chdir(str(child_dir))
+        command("test")
+        assert hasattr(child_env, "parent")
+        assert child_env.test_var == "test_var_value"
+        assert child_env.parent.test_parent_var == "test_value"
+        assert child_env.parent.get_name() == "pa"
+
+        child_env.activate()
+
+        assert os.environ["PA_TESTPARENTVAR"] == "test_value"
+        assert os.environ["CH_TESTVAR"] == "test_var_value"
+
+        flake8()
+        os.chdir(str(parent_dir))
+        mypy()

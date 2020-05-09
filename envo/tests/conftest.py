@@ -6,6 +6,7 @@ from pexpect import run
 from pytest import fixture
 
 from envo import Env
+from tests.parent_env.child_env.env_test import ChildEnv
 from tests.utils import command
 
 test_root = Path(os.path.realpath(__file__)).parent
@@ -37,6 +38,12 @@ def raw_env() -> Env:
     from tests.raw_env.env_test import Env
 
     env = Env()
+    return env
+
+
+@fixture
+def child_env() -> ChildEnv:
+    env = ChildEnv()
     return env
 
 
