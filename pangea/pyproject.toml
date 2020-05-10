@@ -21,6 +21,7 @@ flake8 = "^3.7.9"
 mypy = "^0.770"
 pep8-naming = "^0.10.0"
 pytest = "^5.4.1"
+envo = {path = "../envo"}
 
 [tool.poetry.scripts]
 pangea = "pangea.scripts:_main"

@@ -30,9 +30,6 @@ class TestE2e:
 
     def test_save(self):
         run("envo test --save")
-
-        assert Path("env_comm.py").exists()
-        assert Path("env_test.py").exists()
         assert Path(".env_test").exists()
 
     def test_hot_reload(self, shell, envo_prompt):
@@ -80,10 +77,10 @@ class TestE2e:
         shell.expect(envo_prompt)
 
     def test_autodiscovery(self, envo_prompt):
+        from envo.comm.utils import shell
+
         Path("./test_dir").mkdir()
         os.chdir("./test_dir")
-
-        from conftest import shell
 
         s = shell()
         s.sendline("echo test")
@@ -93,6 +90,8 @@ class TestE2e:
         assert list(Path(".").glob(".*")) == []
 
     def test_init_nested(self):
+        from envo.comm.utils import spawn
+
         expected_files = ["env_comm.py", "env_local.py"]
 
         Path("./test_dir").mkdir()

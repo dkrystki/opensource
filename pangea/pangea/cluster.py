@@ -183,8 +183,8 @@ class Cluster:
     system: Namespace
 
     def __init__(self, li: Links, se: Sets, env: ClusterEnv) -> None:
-        from apps.ingress import Ingress
-        from apps.registry import Registry
+        from pangea.apps.ingress import Ingress
+        from pangea.apps.registry import Registry
 
         self.li = li
         self.se = se

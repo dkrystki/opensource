@@ -434,7 +434,7 @@ version = "1.0.1"
 dev = ["pytest (>=4.6.2)", "black (>=19.3b0)"]
 
 [metadata]
-content-hash = "0c6b56664f11d23b14bfbc0c0117941994145aee558f83e02a5c72ccae1e6551"
+content-hash = "c906afb03839216d2ae1533de002422fe7e50d591c5d20a48e378944e3f8d383"
 python-versions = "^3.8.2"
 
 [metadata.files]

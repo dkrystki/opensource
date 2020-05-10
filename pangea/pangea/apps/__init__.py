@@ -2,29 +2,56 @@ import os
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
+from typing import Any, Dict
 
 from jinja2 import Template
-from loguru import logger
-
-from typing import TYPE_CHECKING, Dict, Any
-
-from pangea.cluster import ClusterEnv
-from pangea.kube import Namespace
-
-from pangea.devops import run
-from envo import Env
 
 import environ
+from envo import Env, Raw, VenvEnv
+from loguru import logger
+from pangea.devops import run
+from pangea.env import ClusterEnv
+from pangea.kube import Namespace
 
 environ = environ.Env()
 
 
 @dataclass
-class AppEnv(Env):
-    app_name: str = None
+class BaseAppEnv(Env):
+    class Meta(Env.Meta):
+        pass
 
-    def __init__(self, root: Path):
-        super().__init__(root)
+    app_name: str
+
+    def __init__(self):
+        super().__init__()
+
+
+@dataclass
+class AppEnv(BaseAppEnv):
+    class Meta(BaseAppEnv.Meta):
+        pass
+
+    venv: VenvEnv
+    app_name: str
+    bin_path: Path
+    comm: Path
+    prebuild: bool
+    path: str
+    pythonpath: Raw[str]
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.comm = self.root / "comm"
+        self.bin_path = self.root / Path(".bin")
+
+        self.path = os.environ["PATH"]
+        self.path = f"{str(self.bin_path)}:{self.path}"
+
+        self.pythonpath = f"{str(self.root)}/comm/python"
+        self.pythonpath = f"{str(self.root.parent)}:{self.pythonpath}"
+
+        self.venv = VenvEnv(owner=self)
 
 
 class App:
@@ -80,11 +107,14 @@ class Image:
 
     def push(self) -> None:
         env = self.li.registry_env
-        run(f"""
+        run(
+            f"""
             docker login {env.address} \\
             --username {env.username} -p{env.password}
             docker push {self.se.tag}
-            """, print_output=False)
+            """,
+            print_output=False,
+        )
 
 
 class Dockerfile:
@@ -105,19 +135,21 @@ class Dockerfile:
 
     def render(self):
         template = Template(self.se.template.read_text())
-        context = {
-            "env": self.li.app_env,
-            "base_image": f"{self.se.base_image}"
-        }
+        context = {"env": self.li.app_env, "base_image": f"{self.se.base_image}"}
         self.se.out_path.write_text(template.render(**context))
 
     def build(self, tag: str):
-        run(f"""
+        run(
+            f"""
             docker build -f {str(self.se.out_path)} -t {tag} {str(self.li.cluster_env.root)}
-            """, print_output=False)
+            """,
+            print_output=False,
+        )
 
-        return Image(se=Image.Sets(tag=tag),
-                     li=Image.Links(registry_env=self.li.cluster_env.registry))
+        return Image(
+            se=Image.Sets(tag=tag),
+            li=Image.Links(registry_env=self.li.cluster_env.registry),
+        )
 
 
 class DockerUtils:
@@ -191,11 +223,14 @@ class AppPythonUtils(PythonUtils):
     def bootstrap_local_dev(self) -> None:
         os.chdir(str(self.se.src))
         logger.info(f"Bootstrapping local python development.")
-        run(f"""
+        run(
+            f"""
             poetry config virtualenvs.in-project true
             poetry config virtualenvs.create true
             poetry install
-            """, print_output=True)
+            """,
+            print_output=True,
+        )
 
 
 class NodeUtils:
@@ -227,12 +262,15 @@ class NodeUtils:
 
 @dataclass
 class SkaffoldAppEnv(AppEnv):
-    app_name: str = None
-    src: Path = None
-    helm_release_name: str = None
-    src_image: str = None
-    dockerfile_templ: Path = None
-    image_name: str = None
+    class Meta(AppEnv.Meta):
+        pass
+
+    app_name: str
+    src: Path
+    helm_release_name: str
+    src_image: str
+    dockerfile_templ: Path
+    image_name: str
 
     def __init__(self):
         super().__init__()
@@ -264,10 +302,12 @@ class SkaffoldApp(App):
         self.env = self.li.env
 
         self.dockerfile = Dockerfile(
-            se=Dockerfile.Sets(template=self.env.dockerfile_templ,
-                               out_path=Path(f"Dockerfile.{self.env.stage}"),
-                               base_image=self.env.base_image),
-            li=Dockerfile.Links(app_env=self.env, cluster_env=self.li.cluster_env)
+            se=Dockerfile.Sets(
+                template=self.env.dockerfile_templ,
+                out_path=Path(f"Dockerfile.{self.env.stage}"),
+                base_image=self.env.base_image,
+            ),
+            li=Dockerfile.Links(app_env=self.env, cluster_env=self.li.cluster_env),
         )
 
         self.skaffold_file = Path(f"skaffold.{self.env.stage}.yaml")
@@ -278,10 +318,12 @@ class SkaffoldApp(App):
         os.chdir(str(self.li.env.root))
         env = self.li.env
         dockerfile = Dockerfile(
-            se=Dockerfile.Sets(template=self.dockerfile.se.template,
-                               out_path=Path(f"{self.dockerfile.se.out_path}.prebuild"),
-                               base_image=env.src_image),
-            li=Dockerfile.Links(app_env=self.env, cluster_env=self.li.cluster_env)
+            se=Dockerfile.Sets(
+                template=self.dockerfile.se.template,
+                out_path=Path(f"{self.dockerfile.se.out_path}.prebuild"),
+                base_image=env.src_image,
+            ),
+            li=Dockerfile.Links(app_env=self.env, cluster_env=self.li.cluster_env),
         )
         dockerfile.render()
         image = dockerfile.build(tag=env.prebuild_image_name)
@@ -292,7 +334,9 @@ class SkaffoldApp(App):
 
         self.dockerfile.render()
 
-        template = Template((self.env.cluster.comm / "kubernetes/skaffold.yaml.templ").read_text())
+        template = Template(
+            (self.env.cluster.comm / "kubernetes/skaffold.yaml.templ").read_text()
+        )
         context = {
             "env": self.env,
             "image_name": self.env.image_name,
@@ -316,22 +360,24 @@ class SkaffoldApp(App):
 
         image = f"{self.env.image_name}:{image_tag}"
 
-        run(f"""
+        run(
+            f"""
             docker login {registry.address} --username {registry.username} -p{registry.password}
             skaffold build -f {str(self.skaffold_file)} --insecure-registry {registry.address}
             docker push {image}
             skaffold deploy -f {str(self.skaffold_file)} --images {image}
-            """, print_output=True)
+            """,
+            print_output=True,
+        )
 
     def dev(self) -> None:
-        self.render(
-            {
-                "dev": True
-            }
-        )
+        self.render({"dev": True})
         registry = self.env.cluster.registry
 
-        run(f"""
+        run(
+            f"""
             docker login {registry.address} --username {registry.username} -p{registry.password}
             skaffold dev -f {str(self.skaffold_file)} --verbosity debug
-            """, print_output=True)
+            """,
+            print_output=True,
+        )

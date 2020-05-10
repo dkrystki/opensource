@@ -11,10 +11,10 @@ class TestPangea:
         shell.sendcontrol("d")
         shell.expect(pexpect.EOF, timeout=1)
 
-    def test_cluster_commands(self):
-        self.envo.sendline("./cluster.py -h")
-        self.envo.expect("help", timeout=1)
+    def test_cluster_commands(self, shell):
+        shell.sendline("./cluster.py -h")
+        shell.expect("help", timeout=1)
 
-    def test_version(self):
-        self.envo.sendline("pangea --version")
-        self.envo.expect("")
+    def test_version(self, shell):
+        shell.sendline("pangea --version")
+        shell.expect("")

@@ -9,6 +9,7 @@ T = TypeVar("T")
 
 if TYPE_CHECKING:
     Raw = Union[T]
+    Manual = Union[T]
 else:
 
     class Raw(Generic[T]):
@@ -89,6 +90,7 @@ class Env(BaseEnv):
 
     root: Path
     stage: str
+    envo_stage: Raw[str]
 
     def __init__(self) -> None:
         self.meta = self.Meta()
@@ -96,6 +98,7 @@ class Env(BaseEnv):
 
         self.root = self.meta.root
         self.stage = self.meta.stage
+        self.envo_stage = self.stage
 
         if self.meta.parent:
             self.meta.parent.activate()

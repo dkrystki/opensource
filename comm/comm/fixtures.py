@@ -41,3 +41,17 @@ def shell_fixture():
     from .utils import shell
 
     return shell()
+
+
+@fixture
+def envo_prompt():
+    from .utils import envo_prompt
+
+    return envo_prompt
+
+
+@fixture
+def prompt():
+    from .utils import prompt
+
+    return prompt

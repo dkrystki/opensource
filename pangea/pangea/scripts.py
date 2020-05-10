@@ -16,6 +16,14 @@ class Pangea:
     def __init__(self) -> None:
         self.current_dir = Path(".").absolute()
 
+        self.cluster_name = self.current_dir.name
+        self.class_name = comm.dir_name_to_class_name(self.cluster_name)
+
+        self.context = {
+            "class_name": self.class_name,
+            "cluster_name": self.cluster_name,
+        }
+
     def _render_py_file(
         self, template_filename: str, output: Path, context: Dict[str, Any]
     ) -> None:
@@ -26,24 +34,25 @@ class Pangea:
         except SystemExit:
             pass
 
-    def create_cluster(self) -> None:
-        cluster_name = self.current_dir.name
-        class_name = comm.dir_name_to_class_name(cluster_name)
+    def create_env(self, stage: str) -> None:
+        # render env_local
+        env_templ_context = self.context.copy()
+        env_templ_context.update(
+            {"stage": stage, "emoji": Envo.stage_emoji_mapping[stage]}
+        )
+        self._render_py_file("env.py.templ", Path(f"env_{stage}.py"), env_templ_context)
 
+    def create_cluster(self) -> None:
         # render cluster.py
-        context = {"class_name": class_name, "cluster_name": cluster_name}
         cluster_file = Path("cluster.py")
-        self._render_py_file("cluster.py.templ", cluster_file, context)
-        self._render_py_file("env_comm.py.templ", Path("env_comm.py"), context)
+        self._render_py_file("cluster.py.templ", cluster_file, self.context)
+        self._render_py_file("env_comm.py.templ", Path("env_comm.py"), self.context)
 
         cluster_file.chmod(0o777)
 
-        # render env_local
-        env_templ_context = context.copy()
-        env_templ_context.update(
-            {"stage": "local", "emoji": Envo.stage_emoji_mapping["local"]}
-        )
-        self._render_py_file("env.py.templ", Path("env_local.py"), env_templ_context)
+        self.create_env("local")
+        self.create_env("test")
+        self.create_env("stage")
 
         Path(".deps").mkdir()
         Path(".bin").mkdir()

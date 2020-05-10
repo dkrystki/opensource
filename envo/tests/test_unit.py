@@ -2,9 +2,8 @@ import os
 from importlib import import_module, reload
 from pathlib import Path
 
-import pytest
-
 import envo.scripts
+import pytest
 from envo.comm.utils import flake8, mypy
 from tests.utils import command, test_root
 
@@ -39,6 +38,11 @@ class TestUnit:
 
     def test_shell(self, init):
         command("test")
+
+    def test_stage(self, init, env):
+        env.activate()
+        assert os.environ["SANDBOX_STAGE"] == "test"
+        assert os.environ["ENVO_STAGE"] == "test"
 
     def test_get_name(self, init, env):
         assert env.get_name() == "sandbox"
