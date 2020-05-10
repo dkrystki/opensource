@@ -8,9 +8,12 @@ import os
 
 @dataclass
 class {{ class_name }}EnvComm(ClusterEnv):
+    class Meta(ClusterEnv.Meta):
+        root = Path(os.path.realpath(__file__)).parent
+        name = "{{ cluster_name }}"
+
     def __init__(self) -> None:
-        super().__init__(root=Path(os.path.realpath(__file__)).parent,
-                         name="{{ cluster_name }}")
+        super().__init__()
 
         self.skaffold_ver = "1.6.0"
         self.kubectl_ver = "1.17.0"

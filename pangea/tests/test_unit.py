@@ -1,16 +1,15 @@
-import sys
 from pathlib import Path
 
-import pexpect
 import pytest
-from pangea.comm.utils import flake8, mypy, spawn
+from pangea.comm.utils import flake8
 from tests.utils import command
 
 
 class TestUnit:
     @pytest.fixture(autouse=True)
-    def setup(self, sandbox, version):
-        pass
+    def setup(self, sandbox, version, assert_no_stderr):
+        yield
+        assert_no_stderr()
 
     def test_creating(self):
         command("--init")

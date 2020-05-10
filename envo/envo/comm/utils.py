@@ -6,6 +6,10 @@ import pexpect as pexpect
 root = Path(".").absolute()
 
 
+prompt = r".*@.*$".encode("utf-8")
+envo_prompt = r"🛠\(sandbox\).*".encode("utf-8")
+
+
 def spawn(command: str) -> pexpect.spawn:
     s = pexpect.spawn(command, echo=False)
     return s

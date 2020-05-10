@@ -1,7 +1,7 @@
 import os
 import shutil
 from pathlib import Path
-from typing import Generator
+from typing import Callable, Generator
 
 from pytest import fixture
 
@@ -25,3 +25,19 @@ def sandbox() -> Generator:
 @fixture
 def prompt() -> bytes:
     return r".*@.*$".encode("utf-8")
+
+
+@fixture
+def assert_no_stderr(capsys) -> Callable[[], None]:
+    def fun() -> None:
+        captured = capsys.readouterr()
+        assert captured.err == ""
+
+    return fun
+
+
+@fixture(name="shell")
+def shell_fixture():
+    from .utils import shell
+
+    return shell()

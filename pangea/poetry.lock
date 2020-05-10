@@ -31,6 +31,17 @@ tests = ["coverage", "hypothesis", "pympler", "pytest (>=4.3.0)", "six", "zope.i
 
 [[package]]
 category = "main"
+description = "Removes unused imports and unused variables"
+name = "autoflake"
+optional = false
+python-versions = "*"
+version = "1.3.1"
+
+[package.dependencies]
+pyflakes = ">=1.1.0"
+
+[[package]]
+category = "main"
 description = "The uncompromising code formatter."
 name = "black"
 optional = false
@@ -88,9 +99,10 @@ description = "Smart Environment variables - Define environmental variables in p
 name = "envo"
 optional = false
 python-versions = ">=3.6.1,<4.0"
-version = "0.5.3"
+version = "0.5.6"
 
 [package.dependencies]
+autoflake = ">=1.3.1,<2.0.0"
 inotify = "*"
 jinja2 = ">=2,<3"
 
@@ -422,7 +434,7 @@ version = "1.0.1"
 dev = ["pytest (>=4.6.2)", "black (>=19.3b0)"]
 
 [metadata]
-content-hash = "fc42da2217a4f36267edb280b5c7736c09e112373578e3209dd74793c0d16ab4"
+content-hash = "0c6b56664f11d23b14bfbc0c0117941994145aee558f83e02a5c72ccae1e6551"
 python-versions = "^3.8.2"
 
 [metadata.files]
@@ -437,6 +449,9 @@ atomicwrites = [
 attrs = [
     {file = "attrs-19.3.0-py2.py3-none-any.whl", hash = "sha256:08a96c641c3a74e44eb59afb61a24f2cb9f4d7188748e76ba4bb5edfa3cb7d1c"},
     {file = "attrs-19.3.0.tar.gz", hash = "sha256:f7b7ce16570fe9965acd6d30101a28f62fb4a7f9e926b3bbc9b61f8b04247e72"},
+]
+autoflake = [
+    {file = "autoflake-1.3.1.tar.gz", hash = "sha256:680cb9dade101ed647488238ccb8b8bfb4369b53d58ba2c8cdf7d5d54e01f95b"},
 ]
 black = [
     {file = "black-19.10b0-py36-none-any.whl", hash = "sha256:1b30e59be925fafc1ee4565e5e08abef6b03fe455102883820fe5ee2e4734e0b"},
@@ -459,8 +474,8 @@ entrypoints = [
     {file = "entrypoints-0.3.tar.gz", hash = "sha256:c70dd71abe5a8c85e55e12c19bd91ccfeec11a6e99044204511f9ed547d48451"},
 ]
 envo = [
-    {file = "envo-0.5.3-py3-none-any.whl", hash = "sha256:326d9c426118bbf17c811247dae476cadc8b51442aa7e3d03c267e34435c4670"},
-    {file = "envo-0.5.3.tar.gz", hash = "sha256:b1ab8bf1ef9c6752999b3a68e4c29d6534d322f64851e5baebd7c88680519917"},
+    {file = "envo-0.5.6-py3-none-any.whl", hash = "sha256:fb66f307cb6c6c9036206581e1bbaab01afd1ed82f1577d4bebb6d8aaa05ae63"},
+    {file = "envo-0.5.6.tar.gz", hash = "sha256:13c045b243ad0b33d7ca62dbecb6f19f4ac79d71c7f135276c6f1766239ef65e"},
 ]
 fire = [
     {file = "fire-0.3.1.tar.gz", hash = "sha256:9736a16227c3d469e5d2d296bce5b4d8fa8d7851e953bda327a455fc2994307f"},

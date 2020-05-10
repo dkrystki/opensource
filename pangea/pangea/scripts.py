@@ -33,8 +33,8 @@ class Pangea:
         # render cluster.py
         context = {"class_name": class_name, "cluster_name": cluster_name}
         cluster_file = Path("cluster.py")
-        self._render_py_file("cluster.templ.py", cluster_file, context)
-        self._render_py_file("env_comm.templ.py", Path("env_comm.py"), context)
+        self._render_py_file("cluster.py.templ", cluster_file, context)
+        self._render_py_file("env_comm.py.templ", Path("env_comm.py"), context)
 
         cluster_file.chmod(0o777)
 
@@ -43,7 +43,7 @@ class Pangea:
         env_templ_context.update(
             {"stage": "local", "emoji": Envo.stage_emoji_mapping["local"]}
         )
-        self._render_py_file("env.templ.py", Path("env_local.py"), env_templ_context)
+        self._render_py_file("env.py.templ", Path("env_local.py"), env_templ_context)
 
         Path(".deps").mkdir()
         Path(".bin").mkdir()

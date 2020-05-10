@@ -1,9 +1,7 @@
 import os
-import sys
 from pathlib import Path
-from typing import Callable, List
 
-import pexpect
+from pexpect import run
 from pytest import fixture
 
 test_root = Path(os.path.realpath(__file__)).parent
@@ -15,8 +13,8 @@ pytest_plugins = [
 
 
 @fixture
-def envo_prompt() -> bytes:
-    return r"🐣\(sandbox\).*".encode("utf-8")
+def init() -> None:
+    run("pangea --init")
 
 
 @fixture

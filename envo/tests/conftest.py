@@ -2,10 +2,9 @@ import os
 from importlib import import_module, reload
 from pathlib import Path
 
+from envo import Env
 from pexpect import run
 from pytest import fixture
-
-from envo import Env
 from tests.parent_env.child_env.env_test import ChildEnv
 from tests.utils import command
 

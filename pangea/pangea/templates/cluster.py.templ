@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from importlib import import_module
 
 from pangea import cluster
-import env_comm
+from {{ cluster_name }}.env_comm import {{ class_name }}EnvComm
 
 
 class {{ class_name }}(cluster.Cluster):
@@ -18,7 +18,7 @@ class {{ class_name }}(cluster.Cluster):
     class Sets(cluster.Cluster.Sets):
         pass
 
-    def __init__(self, li: Links, se: Sets, env: env_comm.Env):
+    def __init__(self, li: Links, se: Sets, env: {{ class_name }}EnvComm):
         super().__init__(li, se, env)
 
         self.env = env
@@ -30,7 +30,7 @@ class {{ class_name }}(cluster.Cluster):
 def get_current_cluster() -> {{ class_name }}:
     import os
     comm = import_module(f"env_comm").Env()
-    stage = os.environ[f'{comm.}_STAGE']
+    stage = os.environ[f'{comm.get_namespace()}_STAGE']
     env = import_module(f"env_{stage}").Env()
 
     current_cluster = {{ class_name }}(li={{ class_name }}.Links(),

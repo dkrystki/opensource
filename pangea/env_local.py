@@ -6,12 +6,13 @@ from opensource.pangea.env_comm import PangeaEnvComm
 
 @dataclass
 class PangeaEnv(PangeaEnvComm):
-    def __init__(self) -> None:
-        self.emoji = "🐣"
-        self.stage = "local"
-        super().__init__()
+    class Meta(PangeaEnvComm.Meta):
+        stage = "local"
+        emoji = "🐣"
+        parent = OpensourceEnv()
 
-        self.parent = OpensourceEnv()
+    def __init__(self) -> None:
+        super().__init__()
 
 
 Env = PangeaEnv

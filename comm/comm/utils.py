@@ -3,12 +3,19 @@ from pathlib import Path
 
 import pexpect as pexpect
 
-root = Path(".").absolute()
+prompt = r".*@.*$".encode("utf-8")
+envo_prompt = r"🛠\(sandbox\).*".encode("utf-8")
 
 
 def spawn(command: str) -> pexpect.spawn:
     s = pexpect.spawn(command, echo=False)
     return s
+
+
+def shell() -> pexpect.spawn:
+    p = pexpect.spawn("envo test")
+    p.expect(envo_prompt, timeout=2)
+    return p
 
 
 def flake8() -> None:

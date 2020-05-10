@@ -24,4 +24,13 @@ def sandbox() -> Generator:
 
 @fixture
 def prompt() -> bytes:
-    return r".*@.*$".encode("utf-8")
+    from . import utils
+
+    return utils.prompt
+
+
+@fixture
+def envo_prompt() -> bytes:
+    from . import utils
+
+    return utils.envo_prompt

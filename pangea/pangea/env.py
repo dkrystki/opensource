@@ -1,26 +1,25 @@
 import os
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List
 
-import envo
+from envo import BaseEnv, Env, Raw, VenvEnv
 
 
 @dataclass
-class AppEnv(envo.Env):
-    class Meta:
-        raw: List[str] = ["path", "pythonpath"]
+class AppEnv(Env):
+    class Meta(Env.Meta):
+        pass
 
-    venv: envo.VenvEnv
+    venv: VenvEnv
     app_name: str
     bin_path: Path
     comm: Path
     prebuild: bool
     path: str
-    pythonpath: str
+    pythonpath: Raw[str]
 
-    def __init__(self, root: Path) -> None:
-        super().__init__(root)
+    def __init__(self) -> None:
+        super().__init__()
         self.comm = self.root / "comm"
         self.bin_path = self.root / Path(".bin")
 
@@ -30,25 +29,25 @@ class AppEnv(envo.Env):
         self.pythonpath = f"{str(self.root)}/comm/python"
         self.pythonpath = f"{str(self.root.parent)}:{self.pythonpath}"
 
-        self.venv = envo.VenvEnv(owner=self)
+        self.venv = VenvEnv(owner=self)
 
 
 @dataclass
-class ClusterEnv(envo.Env):
+class ClusterEnv(Env):
     @dataclass
-    class Device(envo.BaseEnv):
+    class Device(BaseEnv):
         type: str
         k8s_ver: str
         name: str
 
     @dataclass
-    class Registry(envo.BaseEnv):
+    class Registry(BaseEnv):
         address: str
         username: str
         password: str
 
-    class Meta:
-        raw: List[str] = ["path", "pythonpath", "kubeconfig"]
+    class Meta(Env.Meta):
+        pass
 
     skaffold_ver: str
     kubectl_ver: str
@@ -64,8 +63,8 @@ class ClusterEnv(envo.Env):
     comm: Path
     kubeconfig: Path
 
-    def __init__(self, root: Path):
-        super().__init__(root)
+    def __init__(self):
+        super().__init__()
 
         self.deps_dir = self.root / Path(".deps")
         self.bin_dir = self.root / Path(".bin")

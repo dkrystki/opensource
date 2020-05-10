@@ -14,7 +14,7 @@ fire = "^0.3.1"
 flake8 = "^3.7.9"
 jinja2 = "^2.11.2"
 black = "^19.10b0"
-envo = "^0.5.3"
+envo = "^0.5.6"
 
 [tool.poetry.dev-dependencies]
 flake8 = "^3.7.9"
