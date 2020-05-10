@@ -7,6 +7,10 @@ from envo import BaseEnv, Env
 
 @dataclass
 class UndefEnvComm(Env):
+    class Meta(Env.Meta):
+        root = Path(os.path.realpath(__file__)).parent
+        name = "undef_env"
+
     @dataclass
     class Python(BaseEnv):
         version: str
@@ -14,4 +18,4 @@ class UndefEnvComm(Env):
     python: Python
 
     def __init__(self) -> None:
-        super().__init__(root=Path(os.path.realpath(__file__)).parent)
+        super().__init__()

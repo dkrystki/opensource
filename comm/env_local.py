@@ -6,9 +6,11 @@ from opensource.env_local import OpensourceEnv
 
 @dataclass
 class CommEnv(CommEnvComm):
+    class Meta(CommEnvComm.Meta):
+        stage = "local"
+        emoji = "🐣"
+
     def __init__(self) -> None:
-        self.emoji = "🐣"
-        self.stage = "local"
         super().__init__()
 
         self.parent = OpensourceEnv()

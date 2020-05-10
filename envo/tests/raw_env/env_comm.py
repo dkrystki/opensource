@@ -7,6 +7,10 @@ from envo import BaseEnv, Env, Raw
 
 @dataclass
 class RawEnvComm(Env):
+    class Meta(Env.Meta):
+        root = Path(os.path.realpath(__file__)).parent
+        name = "raw_env"
+
     @dataclass
     class SomeEnvGroup(BaseEnv):
         nested: Raw[str]
@@ -15,4 +19,4 @@ class RawEnvComm(Env):
     group: SomeEnvGroup
 
     def __init__(self) -> None:
-        super().__init__(root=Path(os.path.realpath(__file__)).parent)
+        super().__init__()

@@ -6,14 +6,14 @@ from parent_env.env_test import ParentEnv
 
 @dataclass
 class ChildEnv(ChildEnvComm):
+    class Meta(ChildEnvComm.Meta):
+        stage = "test"
+        parent = ParentEnv()
+        emoji = "🛠"
+
     def __init__(self) -> None:
-        self.stage = "test"
-        self.emoji = "🛠"
-
         super().__init__()
-
         self.test_var = "test_var_value"
-        self.parent = ParentEnv()
 
 
 Env = ChildEnv

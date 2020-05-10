@@ -7,6 +7,10 @@ from envo import BaseEnv, Env
 
 @dataclass
 class NestedEnvComm(Env):
+    class Meta(Env.Meta):
+        root = Path(os.path.realpath(__file__)).parent
+        name = "te"
+
     @dataclass
     class Python(BaseEnv):
         version: str
@@ -14,4 +18,4 @@ class NestedEnvComm(Env):
     python: Python
 
     def __init__(self) -> None:
-        super().__init__(root=Path(os.path.realpath(__file__)).parent, name="te")
+        super().__init__()

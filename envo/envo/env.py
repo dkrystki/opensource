@@ -1,5 +1,5 @@
 import os
-from dataclasses import dataclass, fields
+from dataclasses import dataclass, field, fields
 from pathlib import Path
 from subprocess import Popen
 from tempfile import NamedTemporaryFile
@@ -9,13 +9,9 @@ T = TypeVar("T")
 
 if TYPE_CHECKING:
     Raw = Union[T]
-    Parent = Union[T]
 else:
 
     class Raw(Generic[T]):
-        pass
-
-    class Parent(Generic[T]):
         pass
 
 
@@ -23,10 +19,6 @@ else:
 class BaseEnv:
     class UnsetVariable(Exception):
         pass
-
-    class Meta:
-        raw: List[str] = []
-        parent: Optional[str] = None
 
     def __init__(self, name: Optional[str] = None) -> None:
         if name:
@@ -39,7 +31,7 @@ class BaseEnv:
         if not hasattr(self, "_name"):
             self._name = str(self.__class__.__name__)
 
-    def _validate(self, parent_name: str) -> None:
+    def validate(self, parent_name: str = "") -> None:
         for f in fields(self):
             if not hasattr(self, f.name):
                 # TODO: sometimes prints double dots
@@ -50,29 +42,36 @@ class BaseEnv:
             attr: Any = getattr(self, f.name)
 
             if issubclass(type(attr), BaseEnv):
-                attr._validate(parent_name=f"{parent_name}.{f.name}.")
+                attr.validate(parent_name=f"{parent_name}.{f.name}.")
 
     def get_namespace(self) -> str:
         return self._name.replace("_", "").upper()
 
     def activate(self, owner_namespace: str = "") -> None:
-        self._validate(self._name)
+        self.validate(self.get_name())
+
         for f in fields(self):
-            if hasattr(f.type, "__origin__") and (
-                f.type.__origin__ == Raw or f.type.__origin__ == Parent
-            ):
-                namespace = ""
+            var = getattr(self, f.name)
+
+            namespace = ""
+            var_name = ""
+            var_type: Any = None
+            if hasattr(f.type, "__origin__"):
+                var_type = f.type.__origin__
+
+            if var_type == Raw:
                 var_name = f.name.upper()
             else:
                 namespace = f"{owner_namespace}{self.get_namespace()}_"
                 var_name = namespace + f.name.replace("_", "").upper()
 
-            var = getattr(self, f.name)
-
             if isinstance(var, BaseEnv):
                 var.activate(owner_namespace=namespace)
             else:
                 os.environ[var_name] = str(var)
+
+    def get_name(self) -> str:
+        return self._name
 
     def __str__(self) -> str:
         return self._name
@@ -80,16 +79,28 @@ class BaseEnv:
 
 @dataclass
 class Env(BaseEnv):
+    @dataclass
+    class Meta(BaseEnv):
+        stage: str = field(init=False)
+        emoji: str = field(init=False)
+        name: str = field(init=False)
+        root: Path = field(init=False)
+        parent: Optional["Env"] = field(default=None, init=False)
+
     root: Path
-    emoji: str
     stage: str
 
-    def __init__(self, root: Path, name: Optional[str] = None) -> None:
-        super().__init__(name)
-        self.root = root
+    def __init__(self) -> None:
+        self.meta = self.Meta()
+        self.meta.validate()
 
-    def activate(self, *args: Any, **kwargs: Any) -> None:
-        super().activate(*args, **kwargs)
+        self.root = self.meta.root
+        self.stage = self.meta.stage
+
+        if self.meta.parent:
+            self.meta.parent.activate()
+
+        super().__init__(self.meta.name)
 
     def as_string(self, add_export: bool = False) -> List[str]:
         lines: List[str] = []
@@ -102,6 +113,9 @@ class Env(BaseEnv):
 
         return lines
 
+    def activate(self, owner_namespace: str = "") -> None:
+        super().activate(owner_namespace)
+
     def print_envs(self) -> None:
         self.activate()
         content = "".join([f"export {line}\n" for line in self.as_string()])
@@ -109,7 +123,7 @@ class Env(BaseEnv):
 
     def dump_dot_env(self) -> None:
         self.activate()
-        path = Path(f".env{'_' if self.stage else ''}{self.stage}")
+        path = Path(f".env{'_' if self.meta.stage else ''}{self.meta.stage}")
         content = "\n".join(self.as_string())
         path.write_text(content)
 
@@ -125,26 +139,15 @@ class Env(BaseEnv):
         bash_rc.write(content)
         bash_rc.write("\n")
 
-        bash_rc.write(f"PS1={self.emoji}\\({self.get_full_name()}\\)$PS1\n")
+        bash_rc.write(f"PS1={self.meta.emoji}\\({self.get_full_name()}\\)$PS1\n")
 
         return Popen(["bash", "--rcfile", f"{bash_rc.name}"])
 
-    def get_name(self) -> str:
-        return self._name
-
     def get_full_name(self) -> str:
-        parent = self.get_parent()
-        if parent:
-            return parent.get_full_name() + "." + self.get_name()
+        if self.meta.parent:
+            return self.meta.parent.get_full_name() + "." + self.get_name()
         else:
             return self.get_name()
-
-    def get_parent(self) -> Optional["Env"]:
-        for f in fields(self):
-            if hasattr(f.type, "__origin__") and f.type.__origin__ == Parent:
-                ret: "Env" = getattr(self, f.name)
-                return ret
-        return None
 
 
 @dataclass

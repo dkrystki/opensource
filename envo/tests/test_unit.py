@@ -29,8 +29,8 @@ class TestUnit:
 
     def test_importing(self, init, env):
         assert str(env) == "sandbox"
-        assert env.stage == "test"
-        assert env.emoji == envo.scripts.Envo.stage_emoji_mapping[env.stage]
+        assert env.meta.stage == "test"
+        assert env.meta.emoji == envo.scripts.Envo.stage_emoji_mapping[env.meta.stage]
 
     def test_version(self, capsys):
         command("--version")
@@ -113,17 +113,17 @@ class TestUnit:
         flake8()
         mypy()
 
-    def test_parents(self, child_env):
+    def test_parents_basic_functionality(self, child_env):
         os.chdir(test_root)
         parent_dir = Path(".").absolute() / "parent_env"
         child_dir = Path(".").absolute() / "parent_env/child_env"
 
         os.chdir(str(child_dir))
         command("test")
-        assert hasattr(child_env, "parent")
+        assert hasattr(child_env.meta, "parent")
         assert child_env.test_var == "test_var_value"
-        assert child_env.parent.test_parent_var == "test_value"
-        assert child_env.parent.get_name() == "pa"
+        assert child_env.meta.parent.test_parent_var == "test_value"
+        assert child_env.meta.parent.get_name() == "pa"
 
         child_env.activate()
 
@@ -133,3 +133,9 @@ class TestUnit:
         flake8()
         os.chdir(str(parent_dir))
         mypy()
+
+    def test_parents_variables_passed_through(self, child_env):
+        child_env.activate()
+
+        assert "child_bin_dir" in os.environ["PATH"]
+        assert "parent_bin_dir" in os.environ["PATH"]

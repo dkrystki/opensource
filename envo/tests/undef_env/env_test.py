@@ -5,10 +5,12 @@ from .env_comm import UndefEnvComm
 
 @dataclass
 class UndefEnv(UndefEnvComm):
+    class Meta(UndefEnvComm.Meta):
+        stage = "test"
+        emoji = "🛠"
+
     def __init__(self) -> None:
-        self.stage = "test"
         super().__init__()
-        self.emoji = "🛠️"
 
 
 Env = UndefEnv

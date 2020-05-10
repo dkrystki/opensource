@@ -5,11 +5,12 @@ from .env_comm import NestedEnvComm
 
 @dataclass
 class NestedEnv(NestedEnvComm):
-    def __init__(self) -> None:
-        self.stage = "test"
-        super().__init__()
-        self.emoji = "🛠️"
+    class Meta(NestedEnvComm.Meta):
+        stage = "test"
+        emoji = "🛠"
 
+    def __init__(self) -> None:
+        super().__init__()
         self.python = self.Python(version="3.8.2")
 
 

@@ -93,3 +93,5 @@ __pycache__
 
 __version__.py
 sandbox
+
+pip-wheel-metadata

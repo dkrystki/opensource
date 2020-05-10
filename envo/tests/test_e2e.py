@@ -34,7 +34,9 @@ class TestE2e:
         assert Path(".env_test").exists()
 
     def test_hot_reload(self):
-        change_file(Path("env_comm.py"), 0.5, 6, "\n")
+        new_content = Path("env_comm.py").read_text() + "\n"
+        change_file(Path("env_comm.py"), 0.5, new_content)
+
         self.shell.expect(prompt, timeout=5)
         self.shell.sendcontrol("d")
 
@@ -42,7 +44,8 @@ class TestE2e:
         self.shell.sendline("echo $SANDBOX_STAGE")
         self.shell.expect("test", timeout=1)
 
-        change_file(Path("env_comm.py"), 0.5, 14, '        self._name = "new"\n')
+        new_content = Path("env_comm.py").read_text().replace("sandbox", "new")
+        change_file(Path("env_comm.py"), 0.5, new_content)
         new_prompt = prompt.replace(b"sandbox", b"new")
         self.shell.expect(new_prompt, timeout=2)
 
@@ -57,23 +60,27 @@ class TestE2e:
         Path("./test_dir").mkdir()
         os.chdir("./test_dir")
 
-        change_file(Path("../env_comm.py"), 0.5, 6, "\n")
+        new_content = Path("../env_comm.py").read_text() + "\n"
+        change_file(Path("../env_comm.py"), 0.5, new_content)
+
         self.shell.expect(prompt, timeout=5)
         self.shell.sendcontrol("d")
 
     def test_hot_reload_error(self):
         file_before = Path("env_comm.py").read_text()
 
-        change_file(Path("env_comm.py"), 0.5, 9, "    test_var: int\n")
+        new_content = Path("env_comm.py").read_text()
+        new_content = new_content.splitlines(keepends=True)
+        new_content.insert(14, "    test_var: int\n\n")
+        new_content = "".join(new_content)
+        change_file(Path("env_comm.py"), 0.5, new_content)
+
         self.shell.expect(r'.*Env variable "sandbox.test_var" is not set!.*', timeout=5)
 
         Path("env_comm.py").write_text(file_before)
         self.shell.expect(prompt)
 
         self.shell.sendcontrol("d")
-
-        assert Path("env_comm.py").exists()
-        assert Path("env_test.py").exists()
 
     def test_autodiscovery(self):
         Path("./test_dir").mkdir()
