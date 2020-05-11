@@ -6,6 +6,18 @@ from envo import BaseEnv, Env
 
 
 @dataclass
+class ChildEnv(Env):
+    class Meta(Env.Meta):
+        root = Path(os.path.realpath(__file__)).parent
+        name = "child_env"
+
+    child_var: int
+
+    def __init__(self) -> None:
+        super().__init__()
+
+
+@dataclass
 class UndefEnvComm(Env):
     class Meta(Env.Meta):
         root = Path(os.path.realpath(__file__)).parent
@@ -16,6 +28,7 @@ class UndefEnvComm(Env):
         version: str
 
     python: Python
+    child_env: ChildEnv
 
     def __init__(self) -> None:
         super().__init__()

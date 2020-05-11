@@ -1,3 +1,4 @@
+import inspect
 import os
 from dataclasses import dataclass, field, fields
 from pathlib import Path
@@ -19,7 +20,7 @@ else:
 
 @dataclass
 class BaseEnv:
-    class UnsetVariable(Exception):
+    class EnvException(Exception):
         pass
 
     def __init__(self, name: Optional[str] = None) -> None:
@@ -33,24 +34,57 @@ class BaseEnv:
         if not hasattr(self, "_name"):
             self._name = str(self.__class__.__name__)
 
-    def validate(self, parent_name: str = "") -> None:
-        for f in fields(self):
-            if not hasattr(self, f.name):
-                # TODO: sometimes prints double dots
-                raise self.UnsetVariable(
-                    f'Env variable "{parent_name}.{f.name}" is not set!'
-                )
+    def validate(self) -> None:
+        errors = self.get_errors(self.get_name())
+        if errors:
+            raise self.EnvException(f"Detected errors!\n" + "\n".join(errors))
 
-            attr: Any = getattr(self, f.name)
+    def get_errors(self, parent_name: str = "") -> List[str]:
+        """
+        :param parent_name:
+        :return: error messages
+        """
+        # look for undeclared variables
+        field_names = set([f.name for f in fields(self)])
 
-            if issubclass(type(attr), BaseEnv):
-                attr.validate(parent_name=f"{parent_name}.{f.name}.")
+        var_names = set()
+        for f in dir(self):
+            attr: Any = getattr(self, f)
+            if (
+                not inspect.ismethod(attr)
+                and not f.startswith("_")
+                and not inspect.isclass(attr)
+                and f != "meta"
+            ):
+                var_names.add(f)
+
+        unset = field_names - var_names
+        undeclr = var_names - field_names
+
+        error_msgs: List[str] = []
+
+        if unset:
+            error_msgs += [f'Variable "{parent_name}.{v}" is unset!' for v in unset]
+
+        if undeclr:
+            error_msgs += [
+                f'Variable "{parent_name}.{v}" is undeclared!' for v in undeclr
+            ]
+
+        fields_to_check = field_names - unset - undeclr
+
+        for f in fields_to_check:
+            attr2check: Any = getattr(self, f)
+            if issubclass(type(attr2check), BaseEnv):
+                error_msgs += attr2check.get_errors(parent_name=f"{parent_name}.{f}")
+
+        return error_msgs
 
     def get_namespace(self) -> str:
         return self._name.replace("_", "").upper()
 
     def activate(self, owner_namespace: str = "") -> None:
-        self.validate(self.get_name())
+        self.validate()
 
         for f in fields(self):
             var = getattr(self, f.name)
@@ -160,8 +194,8 @@ class VenvEnv(BaseEnv):
     bin: Path
 
     def __init__(self, owner: Env) -> None:
-        self.owner = owner
+        self._owner = owner
         super().__init__(name="venv")
 
-        self.bin = self.owner.root / ".venv/bin"
+        self.bin = self._owner.root / ".venv/bin"
         self.path = f"""{str(self.bin)}:{os.environ['PATH']}"""

@@ -2,9 +2,10 @@ import os
 from importlib import import_module, reload
 from pathlib import Path
 
-from envo import Env
 from pexpect import run
 from pytest import fixture
+
+from envo import Env
 from tests.parent_env.child_env.env_test import ChildEnv
 from tests.utils import command
 
@@ -25,8 +26,16 @@ def nested_env() -> Env:
 
 
 @fixture
-def undef_env() -> Env:
-    from tests.undef_env.env_test import Env
+def unset_env() -> Env:
+    from tests.unset_env.env_test import Env
+
+    env = Env()
+    return env
+
+
+@fixture
+def undecl_env() -> Env:
+    from tests.undecl_env.env_test import Env
 
     env = Env()
     return env

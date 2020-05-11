@@ -2,8 +2,9 @@ import os
 from importlib import import_module, reload
 from pathlib import Path
 
-import envo.scripts
 import pytest
+
+import envo.scripts
 from envo.comm.utils import flake8, mypy
 from tests.utils import command, test_root
 
@@ -94,9 +95,25 @@ class TestUnit:
         assert os.environ["TE_STAGE"] == "test"
         assert os.environ["TE_PYTHON_VERSION"] == "3.8.2"
 
-    def test_verify(self, undef_env):
-        with pytest.raises(envo.BaseEnv.UnsetVariable):
-            undef_env.activate()
+    def test_verify_unset_variable(self, unset_env):
+        with pytest.raises(envo.BaseEnv.EnvException) as exc:
+            unset_env.activate()
+
+        assert str(exc.value) == (
+            "Detected errors!\n"
+            'Variable "undef_env.python" is unset!\n'
+            'Variable "undef_env.child_env.child_var" is unset!'
+        )
+
+    def test_verify_variable_undeclared(self, undecl_env):
+        with pytest.raises(envo.BaseEnv.EnvException) as exc:
+            undecl_env.activate()
+
+        assert str(exc.value) == (
+            "Detected errors!\n"
+            'Variable "undecl_env.some_var" is undeclared!\n'
+            'Variable "undecl_env.child_env.child_var" is undeclared!'
+        )
 
     def test_raw(self, raw_env):
         raw_env.activate()

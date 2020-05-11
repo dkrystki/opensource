@@ -68,6 +68,8 @@ class Envo:
             env = self.get_env()
             os.environ = self._envs_before.copy()  # type: ignore
             self.shell_proc = env.shell()
+        except Env.EnvException as exc:
+            print(exc)
         except Exception:
             print_exc()
 
@@ -92,7 +94,6 @@ class Envo:
 
                 self.source_changed = True
                 self.spawn_shell()
-                print("Reloaded")
 
     def _start_files_watchdog(self) -> None:
         for d in self.env_dirs:

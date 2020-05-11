@@ -3,8 +3,9 @@ from pathlib import Path
 
 import pexpect
 import pytest
-from envo.comm.utils import spawn
 from pexpect import run
+
+from envo.comm.utils import spawn
 from tests.utils import change_file, test_root
 
 
@@ -71,7 +72,10 @@ class TestE2e:
         new_content = "".join(new_content)
         change_file(Path("env_comm.py"), 0.5, new_content)
 
-        shell.expect(r'.*Env variable "sandbox.test_var" is not set!.*', timeout=5)
+        shell.expect(
+            r'.*Reloading...\r\nexit\r\nDetected errors!\r\nVariable "sandbox.test_var" is unset!.*',
+            timeout=5,
+        )
 
         Path("env_comm.py").write_text(file_before)
         shell.expect(envo_prompt)
