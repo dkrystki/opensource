@@ -3,13 +3,15 @@
 import fire
 
 from dataclasses import dataclass
-from importlib import import_module
 
 from pangea import cluster
 from {{ cluster_name }}.env_comm import {{ class_name }}EnvComm
 
 
 class {{ class_name }}(cluster.Cluster):
+    class Meta:
+        name = "{{ cluster_name }}"
+
     @dataclass
     class Links(cluster.Cluster.Links):
         pass
@@ -27,17 +29,5 @@ class {{ class_name }}(cluster.Cluster):
         self.flesh = self.create_namespace("flesh")
 
 
-def get_current_cluster() -> {{ class_name }}:
-    import os
-    stage = os.environ[f'ENVO_STAGE']
-    env = import_module(f"env_{stage}").Env()
-
-    current_cluster = {{ class_name }}(li={{ class_name }}.Links(),
-                                       se={{ class_name }}.Sets(deploy_ingress=True),
-                                       env=env)
-    return current_cluster
-
-
 if __name__ == "__main__":
-    fire.Fire(get_current_cluster())
-
+    fire.Fire({{ class_name }}.handle_command())

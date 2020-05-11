@@ -3,20 +3,25 @@ import os
 import re
 import time
 from dataclasses import dataclass
+from importlib import import_module
 from pathlib import Path
 from typing import OrderedDict
 
 from jinja2 import Template
 
 import environ
-import pangea
+import fire
 from loguru import logger
 from pangea import apps
 from pangea.devops import run
 from pangea.env import ClusterEnv
 from pangea.kube import Namespace
+from pangea.pkg_vars import package_root, templates_dir
 
 environ = environ.Env()
+
+
+__all__ = ["Cluster", "ClusterDevice", "Kind", "Microk8s"]
 
 
 class ClusterDevice:
@@ -33,8 +38,8 @@ class ClusterDevice:
         run(
             f"""
         helm init --wait --tiller-connection-timeout 600
-        kubectl apply -f {str(pangea.root / "k8s/ingress-rbac.yaml")}
-        kubectl apply -f {str(pangea.root / "k8s/rbac-storage-provisioner.yaml")}
+        kubectl apply -f {str(package_root / "k8s/ingress-rbac.yaml")}
+        kubectl apply -f {str(package_root / "k8s/rbac-storage-provisioner.yaml")}
         kubectl create serviceaccount -n kube-system tiller
         kubectl create clusterrolebinding tiller-cluster-admin \\
             --clusterrole=cluster-admin --serviceaccount=kube-system:tiller
@@ -57,7 +62,7 @@ class Kind(ClusterDevice):
 
         logger.info("Creating kind cluster")
 
-        template = Template(Path("kind.yaml.template").read_text())
+        template = Template((templates_dir / "kind.yaml.templ").read_text())
         kind_file = Path(f"kind.{self.env.stage}.yaml")
         context = {"env": self.env}
         kind_file.write_text(template.render(**context))
@@ -166,6 +171,9 @@ devices = {"kind": Kind, "aws": AwsCluster, "microk8s": Microk8s}
 
 
 class Cluster:
+    class Meta:
+        name: str
+
     @dataclass
     class Links:
         pass
@@ -203,6 +211,14 @@ class Cluster:
             self.system.create_app("ingress", Ingress)
 
         self.system.create_app("registry", Registry)
+
+    @classmethod
+    def handle_command(cls) -> None:
+        stage = os.environ[f"ENVO_STAGE"]
+        env = import_module(f"{cls.Meta.name}.env_{stage}").Env()
+
+        current_cluster = cls(li=cls.Links(), se=cls.Sets(deploy_ingress=True), env=env)
+        fire.Fire(current_cluster)
 
     def is_ci_job(self) -> bool:
         return "CI_JOB_ID" in environ

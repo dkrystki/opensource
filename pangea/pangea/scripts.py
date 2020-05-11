@@ -7,9 +7,10 @@ from typing import Any, Dict
 import black
 from jinja2 import Template
 
-import pangea
 from envo.scripts import Envo
-from pangea import comm
+from pangea import comm, pkg_vars
+
+__all__ = []
 
 
 class Pangea:
@@ -27,7 +28,7 @@ class Pangea:
     def _render_py_file(
         self, template_filename: str, output: Path, context: Dict[str, Any]
     ) -> None:
-        template = Template((pangea.templates_dir / template_filename).read_text())
+        template = Template((pkg_vars.templates_dir / template_filename).read_text())
         output.write_text(template.render(**context))
         try:
             black.main([str(output), "-q"])

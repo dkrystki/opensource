@@ -1,12 +1,9 @@
 from dataclasses import dataclass
-from typing import List, Dict, Any, Type, Optional
-
-from loguru import logger
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type
 
 import environ
-from .devops import run, CommandError
-
-from typing import TYPE_CHECKING
+from loguru import logger
+from pangea.devops import CommandError, run
 
 if TYPE_CHECKING:
     from env import Env
@@ -15,12 +12,28 @@ if TYPE_CHECKING:
 environ = environ.Env()
 
 
+class Kube:
+    class Namespace:
+        @classmethod
+        def list(cls) -> List[str]:
+            raw = run("kubectl get namespaces")[1:]
+            # skip header
+            ret = []
+            for r in list(raw):
+                ret.append(r.split()[0])
+            return ret
+
+        @classmethod
+        def create(cls, name: str) -> None:
+            run(f"kubectl create {name}")
+
+
 class HelmRelease:
     """Representation of namespaced helm commands."""
 
     @dataclass
     class Links:
-        namespace: 'Namespace'
+        namespace: "Namespace"
         env: "Env"
 
     def __init__(self, li: Links, release_name: str) -> None:
@@ -28,9 +41,13 @@ class HelmRelease:
         self.release_name = release_name
         self.namespaced_name = f"""{self.li.namespace.name + "-" if self.li.namespace.name else ""}{release_name}"""
 
-    def install(self, chart: str, version: Optional[str] = None,
-                upgrade: bool = True,
-                repo: str = "") -> None:
+    def install(
+        self,
+        chart: str,
+        version: Optional[str] = None,
+        upgrade: bool = True,
+        repo: str = "",
+    ) -> None:
         """
         :param repo:
         :param stage:
@@ -49,7 +66,8 @@ class HelmRelease:
 
         values_path = f"values/{self.li.env.stage}/{self.release_name}.yaml"
 
-        run(f"""helm {"upgrade --install" if upgrade else "install"} \
+        run(
+            f"""helm {"upgrade --install" if upgrade else "install"} \
                 {"" if upgrade else "--name"} {self.namespaced_name} \
                 --namespace={self.li.namespace.name} \
                 --set fullnameOverride={self.release_name} \
@@ -58,7 +76,8 @@ class HelmRelease:
                 --timeout=250000 \
                 "{chart}" \
                 {f"--version='{version}'" if version else ""} \
-            """)
+            """
+        )
 
     def delete(self) -> None:
         logger.info(f"Deleting {self.namespaced_name}")
@@ -87,13 +106,19 @@ class Pod:
         self.li = li
 
     def exec(self, command: str, print_output: bool = False) -> List[str]:
-        return self.li.app.li.namespace.exec(pod=self.se.name, command=command, print_output=print_output)
+        return self.li.app.li.namespace.exec(
+            pod=self.se.name, command=command, print_output=print_output
+        )
 
     def copy_from_pod(self, src_path: str, dst_path: str) -> None:
-        return self.li.app.li.namespace.copy(src_path=f"{self.se.name}:{src_path}", dst_path=dst_path)
+        return self.li.app.li.namespace.copy(
+            src_path=f"{self.se.name}:{src_path}", dst_path=dst_path
+        )
 
     def copy_to_pod(self, src_path: str, dst_path: str) -> None:
-        return self.li.app.li.namespace.copy(src_path=src_path, dst_path=f"{self.se.name}:{dst_path}")
+        return self.li.app.li.namespace.copy(
+            src_path=src_path, dst_path=f"{self.se.name}:{dst_path}"
+        )
 
 
 class Namespace:
@@ -106,7 +131,12 @@ class Namespace:
         self.name = name
         self.apps: Dict[str, "App"] = {}
 
-    def create_app(self, name: str, app_cls: Type["App"], extra_links: Optional[Dict[str, Any]] = None) -> "App":
+    def create_app(
+        self,
+        name: str,
+        app_cls: Type["App"],
+        extra_links: Optional[Dict[str, Any]] = None,
+    ) -> "App":
         root = self.li.env.root
         if self.name != "flesh":
             root /= self.name
@@ -117,13 +147,13 @@ class Namespace:
 
         app = app_cls(
             se=app_cls.Sets(name=name, root=root),
-            li=app_cls.Links(namespace=self, **extra_links)
+            li=app_cls.Links(namespace=self, **extra_links),
         )
         self.apps[app.se.name] = app
         return app
 
     def exists(self) -> bool:
-        return self.name in [n.metadata.name for n in self.li.kube.list_namespace().items]
+        return self.name in Kube.Namespace.list()
 
     def deploy(self) -> None:
         for n, a in self.apps.items():
@@ -141,7 +171,9 @@ class Namespace:
         return run(f"kubectl -n {self.name} {command}", print_output=print_output)
 
     def exec(self, pod: str, command: str, print_output: bool = False) -> List[str]:
-        return self.kubectl(f'exec {pod} -- bash -c "{command}"', print_output=print_output)
+        return self.kubectl(
+            f'exec {pod} -- bash -c "{command}"', print_output=print_output
+        )
 
     def apply_yaml(self, filename: str) -> None:
         self.kubectl(f"apply -f {filename}")
@@ -159,7 +191,9 @@ class Namespace:
         self.kubectl(f"cp {src_path} {dst_path}")
 
     def get_pods(self) -> List[str]:
-        return [p.metadata.name for p in self.li.kube.list_namespaced_pod(self.name).items]
+        return [
+            p.metadata.name for p in self.li.kube.list_namespaced_pod(self.name).items
+        ]
 
     def wait_for_pod(self, pod_name: str, timeout: int = 20) -> None:
         """
@@ -172,9 +206,11 @@ class Namespace:
     def _add_pullsecret(self) -> None:
         env = self.li.env
         logger.info(f"🚀Adding pull secret to {self.name}")
-        self.kubectl("create secret docker-registry pullsecret "
-                     f"--docker-server={env.registry.address} --docker-username={env.registry.username} "
-                     f"--docker-password={env.registry.password} --dry-run -o yaml | kubectl apply -f -")
+        self.kubectl(
+            "create secret docker-registry pullsecret "
+            f"--docker-server={env.registry.address} --docker-username={env.registry.username} "
+            f"--docker-password={env.registry.password} --dry-run -o yaml | kubectl apply -f -"
+        )
 
     def create(self, enable_istio: bool = True, add_pull_secret: bool = True) -> None:
         """
@@ -183,13 +219,13 @@ class Namespace:
         :param add_pull_secret:
         :return:
         """
-        if self.name not in [ns.metadata.name for ns in self.li.kube.list_namespace().items]:
-            namespace = client.V1Namespace()
-            namespace.metadata = client.V1ObjectMeta(name=self.name)
-            self.li.kube.create_namespace(namespace)
+        if self.name not in Kube.Namespace.list():
+            Kube.Namespace.create(name=self.name)
 
         if enable_istio:
-            run(f"kubectl label namespace {self.name} istio-injection=enabled --overwrite")
+            run(
+                f"kubectl label namespace {self.name} istio-injection=enabled --overwrite"
+            )
 
         if add_pull_secret:
             self._add_pullsecret()
@@ -201,4 +237,7 @@ class Namespace:
         :param release_name:
         :return:
         """
-        return HelmRelease(li=HelmRelease.Links(namespace=self, env=self.li.env), release_name=release_name)
+        return HelmRelease(
+            li=HelmRelease.Links(namespace=self, env=self.li.env),
+            release_name=release_name,
+        )

@@ -16,6 +16,9 @@ from jinja2 import Environment, Template
 
 from envo import Env, comm
 
+package_root = Path(os.path.realpath(__file__)).parent
+templates_dir = package_root / "templates"
+
 
 class Envo:
     @dataclass
@@ -33,7 +36,6 @@ class Envo:
     }
     root: Path
     stage: str
-    templates_dir: Path
     env_dirs: List[Path]
     selected_addons: List[str]
     addons: List[str]
@@ -41,10 +43,7 @@ class Envo:
     def __init__(self, sets: Sets) -> None:
         self.se = sets
 
-        self.root = Path(os.path.realpath(__file__)).parent
         self.addons = ["venv"]
-        self.templates_dir = self.root / "templates"
-
         self.env_dirs = []
 
         unknown_addons = [a for a in self.se.addons if a not in self.addons]
@@ -156,7 +155,7 @@ class Envo:
         self, templ_file: Path, output_file: Path, is_comm: bool = False
     ) -> None:
         Environment(keep_trailing_newline=True)
-        template = Template((self.templates_dir / templ_file).read_text())
+        template = Template((templates_dir / templ_file).read_text())
         if output_file.exists():
             print(f"{str(output_file)} file already exists.")
             exit(1)
