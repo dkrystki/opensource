@@ -5,11 +5,12 @@ from subprocess import Popen
 from tempfile import NamedTemporaryFile
 from typing import TYPE_CHECKING, Any, Generic, List, Optional, TypeVar, Union
 
+__all__ = ["BaseEnv", "Env", "Raw", "VenvEnv"]
+
 T = TypeVar("T")
 
 if TYPE_CHECKING:
     Raw = Union[T]
-    Manual = Union[T]
 else:
 
     class Raw(Generic[T]):
