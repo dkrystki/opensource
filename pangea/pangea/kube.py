@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type
 
 import environ
 from loguru import logger
+
 from pangea.devops import CommandError, run
 
 if TYPE_CHECKING:
@@ -131,7 +132,7 @@ class Namespace:
         self.name = name
         self.apps: Dict[str, "App"] = {}
 
-    def create_app(
+    def add_app(
         self,
         name: str,
         app_cls: Type["App"],

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import argparse
+import os
 import sys
 from pathlib import Path
 from typing import Any, Dict
@@ -8,6 +9,7 @@ import black
 from jinja2 import Template
 
 from envo.scripts import Envo
+from loguru import logger
 from pangea import comm, pkg_vars
 
 __all__ = []
@@ -45,6 +47,8 @@ class Pangea:
 
     def create_cluster(self) -> None:
         # render cluster.py
+        current_dir = Path(".").absolute()
+
         cluster_file = Path("cluster.py")
         self._render_py_file("cluster.py.templ", cluster_file, self.context)
         self._render_py_file("env_comm.py.templ", Path("env_comm.py"), self.context)
@@ -55,8 +59,17 @@ class Pangea:
         self.create_env("test")
         self.create_env("stage")
 
+        bin_dir = Path(".bin")
         Path(".deps").mkdir()
-        Path(".bin").mkdir()
+        bin_dir.mkdir()
+
+        os.chdir(str(bin_dir))
+        os.symlink("../cluster.py", "cl")
+
+        os.chdir(str(current_dir))
+
+        logger.info(f"Created cluster 🍰!")
+        logger.info('Activate 🐣 local environment with "envo"')
 
     def handle_command(self, args: argparse.Namespace) -> None:
         if args.version:

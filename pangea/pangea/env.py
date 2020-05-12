@@ -34,6 +34,7 @@ class ClusterEnv(Env):
     bin_dir: Path
 
     comm: Path
+    path: Raw[str]
     kubeconfig: Raw[Path]
     pythonpath: Raw[str]
 

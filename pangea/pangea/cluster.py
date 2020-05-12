@@ -1,6 +1,7 @@
 import collections
 import os
 import re
+import shutil
 import time
 from dataclasses import dataclass
 from importlib import import_module
@@ -12,11 +13,10 @@ from jinja2 import Template
 import environ
 import fire
 from loguru import logger
-from pangea import apps
+from pangea import apps, pkg_vars
 from pangea.devops import run
 from pangea.env import ClusterEnv
 from pangea.kube import Namespace
-from pangea.pkg_vars import package_root, templates_dir
 
 environ = environ.Env()
 
@@ -38,8 +38,8 @@ class ClusterDevice:
         run(
             f"""
         helm init --wait --tiller-connection-timeout 600
-        kubectl apply -f {str(package_root / "k8s/ingress-rbac.yaml")}
-        kubectl apply -f {str(package_root / "k8s/rbac-storage-provisioner.yaml")}
+        kubectl apply -f {str(pkg_vars.package_root / "k8s/ingress-rbac.yaml")}
+        kubectl apply -f {str(pkg_vars.package_root / "k8s/rbac-storage-provisioner.yaml")}
         kubectl create serviceaccount -n kube-system tiller
         kubectl create clusterrolebinding tiller-cluster-admin \\
             --clusterrole=cluster-admin --serviceaccount=kube-system:tiller
@@ -62,7 +62,7 @@ class Kind(ClusterDevice):
 
         logger.info("Creating kind cluster")
 
-        template = Template((templates_dir / "kind.yaml.templ").read_text())
+        template = Template((pkg_vars.templates_dir / "kind.yaml.templ").read_text())
         kind_file = Path(f"kind.{self.env.stage}.yaml")
         context = {"env": self.env}
         kind_file.write_text(template.render(**context))
@@ -171,6 +171,9 @@ devices = {"kind": Kind, "aws": AwsCluster, "microk8s": Microk8s}
 
 
 class Cluster:
+    class ClusterException(Exception):
+        pass
+
     class Meta:
         name: str
 
@@ -208,9 +211,9 @@ class Cluster:
 
         self.system = self.create_namespace("system")
         if self.se.deploy_ingress:
-            self.system.create_app("ingress", Ingress)
+            self.system.add_app("ingress", Ingress)
 
-        self.system.create_app("registry", Registry)
+        self.system.add_app("registry", Registry)
 
     @classmethod
     def handle_command(cls) -> None:
@@ -218,7 +221,27 @@ class Cluster:
         env = import_module(f"{cls.Meta.name}.env_{stage}").Env()
 
         current_cluster = cls(li=cls.Links(), se=cls.Sets(deploy_ingress=True), env=env)
-        fire.Fire(current_cluster)
+        try:
+            fire.Fire(current_cluster)
+        except Cluster.ClusterException as exc:
+            logger.error(exc)
+
+    def createapp(self, app_name: str, app_instance_name: str) -> None:
+        app_dir = pkg_vars.apps_dir / app_name
+        if not app_dir.exists():
+            raise self.ClusterException(f'App "{app_name}" does not exist 😓')
+
+        app_instance_dir = Path(app_instance_name)
+
+        if app_instance_dir.exists():
+            raise self.ClusterException(
+                f'App instance "{app_instance_dir}" already exists 😓'
+            )
+
+        shutil.copytree(str(app_dir), str(app_instance_dir))
+        logger.info(
+            f'App instance "{app_instance_name}" of app "{app_name}" has been created 🍰'
+        )
 
     def is_ci_job(self) -> bool:
         return "CI_JOB_ID" in environ
