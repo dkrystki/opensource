@@ -1,7 +1,8 @@
 import os
 from dataclasses import dataclass
+from pathlib import Path
 
-from envo import Env, Path, Raw, VenvEnv
+from envo import Env, Raw, VenvEnv
 
 
 @dataclass

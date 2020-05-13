@@ -40,7 +40,7 @@ class BaseEnv:
     def validate(self) -> None:
         errors = self.get_errors(self.get_name())
         if errors:
-            raise self.EnvException(f"Detected errors!\n" + "\n".join(errors))
+            raise self.EnvException("Detected errors!\n" + "\n".join(errors))
 
     def get_errors(self, parent_name: str = "") -> List[str]:
         """
