@@ -6,7 +6,10 @@ from subprocess import Popen
 from tempfile import NamedTemporaryFile
 from typing import TYPE_CHECKING, Any, Generic, List, Optional, TypeVar, Union
 
+from loguru import logger
+
 __all__ = ["BaseEnv", "Env", "Raw", "VenvEnv"]
+
 
 T = TypeVar("T")
 
@@ -164,6 +167,7 @@ class Env(BaseEnv):
         path = Path(f".env{'_' if self.meta.stage else ''}{self.meta.stage}")
         content = "\n".join(self.as_string())
         path.write_text(content)
+        logger.info(f"Saved envs to {str(path)} 💾")
 
     def shell(self) -> Popen:
         self.activate()

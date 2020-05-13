@@ -3,9 +3,8 @@ from pathlib import Path
 
 import pexpect
 import pytest
-from pexpect import run
-
 from envo.comm.utils import spawn
+from pexpect import run
 from tests.utils import change_file, test_root
 
 
@@ -30,7 +29,8 @@ class TestE2e:
         assert ret != b""
 
     def test_save(self):
-        run("envo test --save")
+        ret = run("envo test --save")
+        assert b"Saved envs to .env_test" in ret
         assert Path(".env_test").exists()
 
     def test_hot_reload(self, shell, envo_prompt):
@@ -73,7 +73,7 @@ class TestE2e:
         change_file(Path("env_comm.py"), 0.5, new_content)
 
         shell.expect(
-            r'.*Reloading...\r\nexit\r\nDetected errors!\r\nVariable "sandbox.test_var" is unset!.*',
+            r'.*Reloading.*exit.*Detected errors!.*Variable "sandbox.test_var" is unset!.*',
             timeout=5,
         )
 

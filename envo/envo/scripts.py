@@ -15,6 +15,7 @@ from inotify.adapters import Inotify  # type: ignore
 from jinja2 import Environment, Template
 
 from envo import Env, comm
+from loguru import logger
 
 package_root = Path(os.path.realpath(__file__)).parent
 templates_dir = package_root / "templates"
@@ -69,7 +70,7 @@ class Envo:
             os.environ = self._envs_before.copy()  # type: ignore
             self.shell_proc = env.shell()
         except Env.EnvException as exc:
-            print(exc)
+            logger.error(exc)
         except Exception:
             print_exc()
 
@@ -89,8 +90,8 @@ class Envo:
         for event in self.inotify.event_gen(yield_nones=False):
             (_, type_names, path, filename) = event
             if "IN_CLOSE_WRITE" in type_names:
-                print(f'\nDetected changes in "{str(path)}".')
-                print("Reloading...")
+                logger.info(f'\nDetected changes in "{str(path)}".')
+                logger.info("Reloading...")
 
                 self.source_changed = True
                 self.spawn_shell()
@@ -147,7 +148,7 @@ class Envo:
             env = reload(import_module(module_name)).Env()  # type: ignore
             return env
         except ImportError as exc:
-            print(f"""Couldn't import "{module_name}" ({exc}).""")
+            logger.error(f"""Couldn't import "{module_name}" ({exc}).""")
             raise
         finally:
             self._delete_init_files()
@@ -158,7 +159,7 @@ class Envo:
         Environment(keep_trailing_newline=True)
         template = Template((templates_dir / templ_file).read_text())
         if output_file.exists():
-            print(f"{str(output_file)} file already exists.")
+            logger.error(f"{str(output_file)} file already exists.")
             exit(1)
 
         output_file.touch()
@@ -188,13 +189,13 @@ class Envo:
 
         env_file = Path(f"env_{self.se.stage}.py")
         self._create_from_templ(Path("env.py.templ"), env_file)
-        print(f"Created {self.se.stage} environment 🍰!")
+        logger.info(f"Created {self.se.stage} environment 🍰!")
 
     def handle_command(self, args: argparse.Namespace) -> None:
         if args.version:
             from envo.__version__ import __version__
 
-            print(__version__)
+            logger.info(__version__)
             return
 
         if args.init:

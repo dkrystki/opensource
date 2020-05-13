@@ -2,9 +2,8 @@ import os
 from importlib import import_module, reload
 from pathlib import Path
 
-import pytest
-
 import envo.scripts
+import pytest
 from envo.comm.utils import flake8, mypy
 from tests.utils import command, test_root
 
@@ -13,12 +12,11 @@ environ_before = os.environ.copy()
 
 class TestUnit:
     @pytest.fixture(autouse=True)
-    def setup(self, mock_exit, sandbox, version, mocker, capsys):
+    def setup(self, mock_exit, sandbox, version, mocker, caplog):
         mocker.patch("envo.scripts.Envo._start_files_watchdog")
         os.environ = environ_before.copy()
         yield
-        captured = capsys.readouterr()
-        assert captured.err == ""
+        assert len(caplog.messages) == 0
 
     def test_creating(self, init):
         assert Path("env_comm.py").exists()
@@ -32,10 +30,10 @@ class TestUnit:
         assert env.meta.stage == "test"
         assert env.meta.emoji == envo.scripts.Envo.stage_emoji_mapping[env.meta.stage]
 
-    def test_version(self, capsys):
+    def test_version(self, caplog):
         command("--version")
-        captured = capsys.readouterr()
-        assert captured.out == "1.2.3\n"
+        assert caplog.messages[0] == "1.2.3"
+        assert len(caplog.messages) == 1
 
     def test_shell(self, init):
         command("test")
@@ -56,19 +54,22 @@ class TestUnit:
         Path("sandbox/__init__.py").touch()
         command("test")
 
-    def test_dry_run(self, init, capsys):
+    def test_dry_run(self, init, capsys, caplog):
         command("test", "--dry-run")
         captured = capsys.readouterr()
         assert captured.out != ""
+        assert len(caplog.messages) == 0
 
-    def test_save(self, init, capsys):
-        command("test", "--dry-run", "--save")
+    def test_save(self, init, caplog, capsys):
+        command("test", "--save")
 
+        assert len(caplog.messages) == 1
+        assert caplog.messages[0] == "Saved envs to .env_test 💾"
         assert Path(".env_test").exists()
-        Path(".env_test").unlink()
 
         captured = capsys.readouterr()
-        assert captured.out != ""
+        assert captured.out == ""
+        assert captured.err == ""
 
     def test_activating(self, init, env):
         env.activate()
