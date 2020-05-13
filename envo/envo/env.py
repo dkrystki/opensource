@@ -48,13 +48,22 @@ class BaseEnv:
         :return: error messages
         """
         # look for undeclared variables
-        field_names = set([f.name for f in fields(self)])
+        field_names = set([fie.name for fie in fields(self)])
 
         var_names = set()
+        f: str
         for f in dir(self):
             attr: Any = getattr(self, f)
+
+            if hasattr(self.__class__, f):
+                class_attr: Any = getattr(self.__class__, f)
+            else:
+                class_attr = None
             if (
                 not inspect.ismethod(attr)
+                and not (
+                    class_attr is not None and inspect.isdatadescriptor(class_attr)
+                )
                 and not f.startswith("_")
                 and not inspect.isclass(attr)
                 and f != "meta"

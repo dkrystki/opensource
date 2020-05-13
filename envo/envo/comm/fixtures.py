@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Callable, Generator
 
 import pexpect
+from loguru_caplog import loguru_caplog as caplog  # noqa: ignore F401
 from pytest import fixture
 
 from . import utils

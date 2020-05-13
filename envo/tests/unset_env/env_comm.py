@@ -18,7 +18,7 @@ class ChildEnv(Env):
 
 
 @dataclass
-class UndefEnvComm(Env):
+class UnsetEnvComm(Env):
     class Meta(Env.Meta):
         root = Path(os.path.realpath(__file__)).parent
         name = "undef_env"

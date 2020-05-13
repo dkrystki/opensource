@@ -16,7 +16,7 @@ class ChildEnv(ChildEnv):
 
 
 @dataclass
-class UndefEnv(UndeclEnvComm):
+class UndeclEnv(UndeclEnvComm):
     class Meta(UndeclEnvComm.Meta):
         stage = "test"
         emoji = "🛠"
@@ -27,4 +27,4 @@ class UndefEnv(UndeclEnvComm):
         self.child_env = ChildEnv()
 
 
-Env = UndefEnv
+Env = UndeclEnv

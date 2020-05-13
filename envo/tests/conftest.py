@@ -5,7 +5,12 @@ from pathlib import Path
 from envo import Env
 from pexpect import run
 from pytest import fixture
+from tests.nested_env.env_test import NestedEnv
 from tests.parent_env.child_env.env_test import ChildEnv
+from tests.property_env.env_test import PropertyEnv
+from tests.raw_env.env_test import RawEnv
+from tests.undecl_env.env_test import UndeclEnv
+from tests.unset_env.env_test import UnsetEnv
 from tests.utils import command
 
 test_root = Path(os.path.realpath(__file__)).parent
@@ -17,34 +22,32 @@ pytest_plugins = [
 
 
 @fixture
-def nested_env() -> Env:
-    from tests.nested_env.env_test import Env
-
-    env = Env()
+def nested_env() -> NestedEnv:
+    env = NestedEnv()
     return env
 
 
 @fixture
-def unset_env() -> Env:
-    from tests.unset_env.env_test import Env
-
-    env = Env()
+def unset_env() -> UnsetEnv:
+    env = UnsetEnv()
     return env
 
 
 @fixture
-def undecl_env() -> Env:
-    from tests.undecl_env.env_test import Env
-
-    env = Env()
+def undecl_env() -> UndeclEnv:
+    env = UndeclEnv()
     return env
 
 
 @fixture
-def raw_env() -> Env:
-    from tests.raw_env.env_test import Env
+def raw_env() -> RawEnv:
+    env = RawEnv()
+    return env
 
-    env = Env()
+
+@fixture
+def property_env() -> PropertyEnv:
+    env = PropertyEnv()
     return env
 
 

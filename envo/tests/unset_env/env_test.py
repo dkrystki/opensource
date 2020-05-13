@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from .env_comm import ChildEnv, UndefEnvComm
+from .env_comm import ChildEnv, UnsetEnvComm
 
 
 @dataclass
@@ -14,8 +14,8 @@ class ChildEnv(ChildEnv):
 
 
 @dataclass
-class UndefEnv(UndefEnvComm):
-    class Meta(UndefEnvComm.Meta):
+class UnsetEnv(UnsetEnvComm):
+    class Meta(UnsetEnvComm.Meta):
         stage = "test"
         emoji = "🛠"
 
@@ -25,4 +25,4 @@ class UndefEnv(UndefEnvComm):
         self.child_env = ChildEnv()
 
 
-Env = UndefEnv
+Env = UnsetEnv

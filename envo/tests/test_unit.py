@@ -116,6 +116,11 @@ class TestUnit:
             'Variable "undecl_env.child_env.child_var" is undeclared!'
         )
 
+    def test_verify_property_in_env(self, property_env):
+        property_env.activate()
+
+        assert property_env.group.prop == "test_value_modified"
+
     def test_raw(self, raw_env):
         raw_env.activate()
         assert os.environ["NOT_NESTED"] == "NOT_NESTED_TEST"
