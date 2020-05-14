@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from parent_env.env_comm import ParentEnvComm
+from .env_comm import ParentEnvComm
 
 
 @dataclass

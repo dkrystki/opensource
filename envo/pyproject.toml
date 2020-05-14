@@ -28,6 +28,7 @@ dataclasses = { version = "*", python = ">=3.6, <3.7" }
 inotify = "*"
 loguru = "*"
 jinja2 = "^2"
+ilock = "^1"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.4.1"

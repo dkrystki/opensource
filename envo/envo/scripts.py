@@ -13,9 +13,10 @@ from typing import Any, Dict, List, Optional
 
 from inotify.adapters import Inotify  # type: ignore
 from jinja2 import Environment, Template
+from loguru import logger
 
 from envo import Env, comm
-from loguru import logger
+from ilock import ILock
 
 package_root = Path(os.path.realpath(__file__)).parent
 templates_dir = package_root / "templates"
@@ -112,7 +113,7 @@ class Envo:
             env_file = path / f"env_{self.se.stage}.py"
             if env_file.exists():
                 self.env_dirs.append(path)
-                sys.path.append(str(path.parent))
+                sys.path.insert(0, str(path.parent))
             else:
                 if path == Path("/"):
                     break
@@ -123,7 +124,7 @@ class Envo:
 
     def _create_init_files(self) -> None:
         for d in self.env_dirs:
-            init_file = d / Path("__init__.py")
+            init_file = d / "__init__.py"
             if not init_file.exists():
                 init_file.touch()
                 init_file.write_text("# __envo_delete__")
@@ -131,27 +132,44 @@ class Envo:
     def _delete_init_files(self) -> None:
         for d in self.env_dirs:
             init_file = d / Path("__init__.py")
+
             if init_file.read_text() == "# __envo_delete__":
                 init_file.unlink()
+
+    def _reload_modules(self) -> None:
+        abs_module = ""
+        for d in reversed(self.env_dirs):
+            abs_module = abs_module + ("." if abs_module else "") + f"{d.name}"
+            rel_module = f"{d.name}"
+
+            reload(import_module(f"{abs_module}.env_comm"))
+            reload(import_module(f"{rel_module}.env_comm"))
+            for f in d.glob("env*.py"):
+                if "comm" in f.stem:
+                    continue
+                reload(import_module(f"{abs_module}.{f.stem}"))
+                if rel_module != abs_module:
+                    reload(import_module(f"{rel_module}.{f.stem}"))
 
     def get_env(self) -> Env:
         package = self.env_dirs[0].name
         env_name = f"env_{self.se.stage}"
         module_name = f"{package}.{env_name}"
-        comm_module_name = f"{package}.env_comm"
 
-        self._create_init_files()
+        with ILock("envo_lock"):
+            # time.sleep(random.uniform(0.0, 1.5))
+            self._create_init_files()
 
-        try:
-            reload(import_module(comm_module_name))
-            env: Env
-            env = reload(import_module(module_name)).Env()  # type: ignore
-            return env
-        except ImportError as exc:
-            logger.error(f"""Couldn't import "{module_name}" ({exc}).""")
-            raise
-        finally:
-            self._delete_init_files()
+            try:
+                self._reload_modules()
+                env: Env
+                env = import_module(module_name).Env()  # type: ignore
+                return env
+            except ImportError as exc:
+                logger.error(f"""Couldn't import "{module_name}" ({exc}).""")
+                raise
+            finally:
+                self._delete_init_files()
 
     def _create_from_templ(
         self, templ_file: Path, output_file: Path, is_comm: bool = False

@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
-from parent_env.child_env.env_comm import ChildEnvComm
-from parent_env.env_test import ParentEnv
+from ..env_test import ParentEnv
+from .env_comm import ChildEnvComm
 
 
 @dataclass

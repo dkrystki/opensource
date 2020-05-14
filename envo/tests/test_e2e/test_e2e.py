@@ -5,12 +5,12 @@ import pexpect
 import pytest
 from envo.comm.utils import spawn
 from pexpect import run
-from tests.utils import change_file, test_root
+from tests.utils import change_file
 
 
 class TestE2e:
     @pytest.fixture(autouse=True)
-    def setup(self, sandbox, prompt, e2e_init):
+    def setup(self, sandbox, prompt, init):
         pass
 
     def test_shell(self, shell, envo_prompt):
@@ -34,10 +34,10 @@ class TestE2e:
         assert Path(".env_test").exists()
 
     def test_hot_reload(self, shell, envo_prompt):
-        new_content = Path("env_comm.py").read_text() + "\n"
+        new_content = Path("env_comm.py").read_text().replace("sandbox", "new")
         change_file(Path("env_comm.py"), 0.5, new_content)
-
-        shell.expect(envo_prompt, timeout=5)
+        new_prompt = envo_prompt.replace(b"sandbox", b"new")
+        shell.expect(new_prompt, timeout=2)
 
     def test_hot_reload_old_envs_gone(self, shell, envo_prompt):
         shell.sendline("echo $SANDBOX_STAGE")
@@ -93,27 +93,15 @@ class TestE2e:
 
         assert list(Path(".").glob(".*")) == []
 
-    def test_init_nested(self):
-        from envo.comm.utils import spawn
+    def test_multiple_instances(self, envo_prompt):
+        from envo.comm.utils import shell
 
-        expected_files = ["env_comm.py", "env_local.py"]
+        shells = [shell() for i in range(6)]
 
-        Path("./test_dir").mkdir()
-        os.chdir("./test_dir")
-        for f in expected_files:
-            if Path(f).exists():
-                Path(f).unlink()
+        new_content = Path("env_comm.py").read_text() + "\n"
+        change_file(Path("env_comm.py"), 0.5, new_content)
 
-        nested_prompt = r"🐣\(test_dir\).*".encode("utf-8")
-        run("envo --init")
-        s = spawn("envo")
-        s.sendline("echo test")
-        s.expect(nested_prompt, timeout=1)
-        s.sendcontrol("d")
-
-        for f in expected_files:
-            assert Path(f).exists()
-            Path(f).unlink()
+        [s.expect(envo_prompt, timeout=6) for s in shells]
 
     def test_env_persists_in_bash_scripts(self, shell):
         file = Path("script.sh")
@@ -123,8 +111,49 @@ class TestE2e:
         shell.sendline("bash script.sh")
         shell.expect(str(Path(".").absolute()), timeout=1)
 
-    def test_child_parent_prompt(self):
-        os.chdir(test_root / "parent_env/child_env")
+
+class TestNested:
+    @pytest.fixture(autouse=True)
+    def setup(self, sandbox, prompt, init, child_env):
+        pass
+
+    def test_init(self, envo_prompt):
+        from envo.comm.utils import spawn
+
+        os.chdir("child")
 
         s = spawn("envo test")
-        s.expect(r"🛠\(pa.ch\).*".encode("utf-8"), timeout=2)
+        nested_prompt = envo_prompt.replace(b"sandbox", b"sandbox.child")
+
+        s.expect(nested_prompt, timeout=1)
+
+    def test_child_parent_prompt(self):
+        os.chdir("child")
+
+        s = spawn("envo test")
+        s.expect(r"🛠\(sandbox.child\).*".encode("utf-8"), timeout=2)
+
+    def test_hot_reload(self, envo_prompt):
+        from envo.comm.utils import spawn
+
+        os.chdir("child")
+
+        s = spawn("envo test")
+        nested_prompt = envo_prompt.replace(b"sandbox", b"sandbox.child")
+        s.expect(nested_prompt, timeout=1)
+
+        child_file = Path("env_comm.py")
+        content = child_file.read_text()
+        content = content.replace("child", "ch")
+        child_file.write_text(content)
+
+        new_prompt1 = nested_prompt.replace(b"child", b"ch")
+        s.expect(new_prompt1, timeout=1)
+
+        parent_file = Path("../env_comm.py")
+        content = parent_file.read_text()
+        content = content.replace("sandbox", "sb")
+        parent_file.write_text(content)
+
+        new_prompt2 = new_prompt1.replace(b"sandbox", b"sb")
+        s.expect(new_prompt2, timeout=1)
