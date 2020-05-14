@@ -22,6 +22,7 @@ pep8-naming = "^0.10.0"
 pytest = "^5.4.1"
 envo = {path = "../envo"}
 pytest-mock = "^3.1.0"
+loguru_caplog = "^0.1.3"
 
 [tool.poetry.scripts]
 pangea = "pangea.scripts:_main"

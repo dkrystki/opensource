@@ -6,13 +6,13 @@ import time
 from dataclasses import dataclass
 from importlib import import_module
 from pathlib import Path
-from typing import OrderedDict
+from typing import List, OrderedDict
 
 from jinja2 import Template
+from loguru import logger
 
 import environ
 import fire
-from loguru import logger
 from pangea import apps, pkg_vars
 from pangea.devops import run
 from pangea.env import ClusterEnv
@@ -34,7 +34,7 @@ class ClusterDevice:
         pass
 
     def _post_bootstrap(self) -> None:
-        logger.info("Initializing helm")
+        logger.info("Initializing helm ⏳")
         run(
             f"""
         helm init --wait --tiller-connection-timeout 600
@@ -60,7 +60,7 @@ class Kind(ClusterDevice):
     def bootstrap(self) -> None:
         super().bootstrap()
 
-        logger.info("Creating kind cluster")
+        logger.info("Creating kind cluster ⏳")
 
         template = Template((pkg_vars.templates_dir / "kind.yaml.templ").read_text())
         kind_file = Path(f"kind.{self.env.stage}.yaml")
@@ -85,8 +85,7 @@ class Kind(ClusterDevice):
             # For some reason dns resolution doesn't work on CI. This line fixes it
             docker exec {self.env.device.name}-control-plane \\
             bash -c "echo \\"nameserver 8.8.8.8\\" >> /etc/resolv.conf"
-            """,
-            progress_bar=True,
+            """
         )
 
         self._post_bootstrap()
@@ -170,6 +169,169 @@ class AwsCluster(ClusterDevice):
 devices = {"kind": Kind, "aws": AwsCluster, "microk8s": Microk8s}
 
 
+class Dependency:
+    @dataclass
+    class Sets:
+        deps_dir: Path
+        version: str
+
+    name: str
+
+    def __init__(self, se: Sets) -> None:
+        self.se = se
+
+    def install(self) -> None:
+        if self.exists():
+            logger.opt(colors=True).info(f"<green>{self.name} already exists 👌</green>")
+        else:
+            logger.info(f"Installing {self.name} ⏳")
+
+    def exists(self) -> bool:
+        if (Path(self.se.deps_dir) / self.name).exists():
+            return True
+        else:
+            return False
+
+
+class Kubectl(Dependency):
+    @dataclass
+    class Sets(Dependency.Sets):
+        pass
+
+    name = "kubectl"
+
+    def __init__(self, se: Sets) -> None:
+        super().__init__(se)
+        self.se = se
+
+    def install(self) -> None:
+        super().install()
+
+        if self.exists():
+            return
+
+        run(
+            f"""
+            cd /tmp
+            curl -Lso kubectl \\
+            "https://storage.googleapis.com/kubernetes-release/release/v{self.se.version}/bin/linux/amd64/kubectl"
+            chmod +x kubectl
+            mv kubectl {self.se.deps_dir}/kubectl
+            """
+        )
+
+
+class Hostess(Dependency):
+    @dataclass
+    class Sets(Dependency.Sets):
+        pass
+
+    name = "hostess"
+
+    def __init__(self, se: Sets) -> None:
+        super().__init__(se)
+        self.se = se
+
+    def install(self) -> None:
+        super().install()
+
+        if self.exists():
+            return
+
+        run(
+            f"""
+            cd /tmp
+            curl -Lso hostess https://github.com/cbednarski/hostess/releases/download/v{self.se.version}/hostess_linux_386
+            chmod u+x hostess
+            mv hostess {self.se.deps_dir}/hostess
+            """
+        )
+
+
+class Helm(Dependency):
+    @dataclass
+    class Sets(Dependency.Sets):
+        pass
+
+    name = "helm"
+
+    def __init__(self, se: Sets) -> None:
+        super().__init__(se)
+        self.se = se
+
+    def install(self) -> None:
+        super().install()
+
+        if self.exists():
+            return
+
+        release_name = f"helm-v{self.se.version}-linux-386"
+        run(
+            f"""
+            cd /tmp
+            curl -Lso helm.tar.gz https://get.helm.sh/{release_name}.tar.gz
+            tar -zxf helm.tar.gz
+            mv linux-386/helm {self.se.deps_dir}/helm
+            """
+        )
+
+
+class Skaffold(Dependency):
+    @dataclass
+    class Sets(Dependency.Sets):
+        pass
+
+    name = "skaffold"
+
+    def __init__(self, se: Sets) -> None:
+        super().__init__(se)
+        self.se = se
+
+    def install(self) -> None:
+        super().install()
+
+        if self.exists():
+            return
+
+        run(
+            f"""
+            cd /tmp
+            curl -Lso skaffold \\
+                "https://storage.googleapis.com/skaffold/releases/v{self.se.version}/skaffold-linux-amd64"
+            chmod +x skaffold
+            mv skaffold {self.se.deps_dir}/skaffold
+            """
+        )
+
+
+class Kind(Dependency):
+    @dataclass
+    class Sets(Dependency.Sets):
+        pass
+
+    name = "kind"
+
+    def __init__(self, se: Sets) -> None:
+        super().__init__(se)
+        self.se = se
+
+    def install(self) -> None:
+        super().install()
+
+        if self.exists():
+            return
+
+        run(
+            f"""
+            cd /tmp
+            curl -Lso kind \\
+                "https://github.com/kubernetes-sigs/kind/releases/download/v{self.se.version}/kind-$(uname)-amd64"
+            chmod +x kind
+            mv kind {self.se.deps_dir}/kind
+            """
+        )
+
+
 class Cluster:
     class ClusterException(Exception):
         pass
@@ -190,6 +352,7 @@ class Cluster:
     se: Sets
     senv: ClusterEnv
     namespaces: OrderedDict[str, Namespace]
+    deps: List[Dependency]
     python: apps.PythonUtils
     system: Namespace
 
@@ -202,6 +365,20 @@ class Cluster:
         self.env = env
 
         self.device = devices[self.env.device.type](self.env)
+
+        self.deps = [
+            Kubectl(
+                Kubectl.Sets(deps_dir=self.env.deps_dir, version=self.env.kubectl_ver)
+            ),
+            Kind(Kind.Sets(deps_dir=self.env.deps_dir, version=self.env.kind_ver)),
+            Skaffold(
+                Skaffold.Sets(deps_dir=self.env.deps_dir, version=self.env.skaffold_ver)
+            ),
+            Hostess(
+                Hostess.Sets(deps_dir=self.env.deps_dir, version=self.env.hostess_ver)
+            ),
+            Helm(Helm.Sets(deps_dir=self.env.deps_dir, version=self.env.helm_ver)),
+        ]
 
         self.namespaces = collections.OrderedDict()
 
@@ -261,8 +438,6 @@ class Cluster:
         return namespace
 
     def prepare_all(self) -> None:
-        logger.info("Preparing apps.")
-
         for n in self.namespaces.values():
             for a in n.apps.values():
                 a.prepare()
@@ -294,117 +469,17 @@ class Cluster:
     def install_deps(self) -> None:
         self.chdir_to_project_root()
 
-        self.install_hostess()
-        self.install_kubectl()
-        self.install_helm()
-        self.install_skaffold()
-        self.install_kind()
+        logger.opt(colors=True).info("<blue>Installing dependencies </blue>⏳")
 
-    def install_helm(self) -> None:
-        self.chdir_to_project_root()
-        logger.info("Installing helm")
-
-        if (Path(self.env.deps_dir) / "helm").exists():
-            logger.info("Already exists, passing.")
-            return
-
-        release_name = f"helm-v{self.env.helm_ver}-linux-386"
-        run(
-            f"""
-            cd /tmp
-            curl -Lso helm.tar.gz https://get.helm.sh/{release_name}.tar.gz
-            tar -zxf helm.tar.gz
-            mv linux-386/helm {self.env.deps_dir}/helm
-            """,
-            progress_bar=True,
-        )
-        logger.info("Done")
-
-    def install_kind(self) -> None:
-        self.chdir_to_project_root()
-        logger.info("Installing kind")
-
-        if (Path(self.env.deps_dir) / "kind").exists():
-            logger.info("Already exists, passing.")
-            return
-
-        run(
-            f"""
-            cd /tmp
-            curl -Lso kind \\
-                "https://github.com/kubernetes-sigs/kind/releases/download/v{self.env.kind_ver}/kind-$(uname)-amd64"
-            chmod +x kind
-            mv kind {self.env.deps_dir}/kind
-            """,
-            progress_bar=True,
-        )
-
-    def install_kubectl(self) -> None:
-        self.chdir_to_project_root()
-        logger.info("Installing kubectl")
-
-        if (Path(self.env.deps_dir) / "kubectl").exists():
-            logger.info("Already exists, passing.")
-            return
-
-        run(
-            f"""
-            cd /tmp
-            curl -Lso kubectl \\
-            "https://storage.googleapis.com/kubernetes-release/release/v{self.env.kubectl_ver}/bin/linux/amd64/kubectl"
-            chmod +x kubectl
-            mv kubectl {self.env.deps_dir}/kubectl
-            """,
-            progress_bar=True,
-        )
-        logger.info("Done")
-
-    def install_skaffold(self) -> None:
-        self.chdir_to_project_root()
-        logger.info("Installing skaffold")
-
-        if (Path(self.env.deps_dir) / "skaffold").exists():
-            logger.info("Already exists, passing.")
-            return
-
-        run(
-            f"""
-            cd /tmp
-            curl -Lso skaffold \\
-                "https://storage.googleapis.com/skaffold/releases/v{self.env.skaffold_ver}/skaffold-linux-amd64"
-            chmod +x skaffold
-            mv skaffold {self.env.deps_dir}/skaffold
-            """,
-            progress_bar=True,
-        )
-        logger.info("Done")
-
-    def install_hostess(self) -> None:
-        self.chdir_to_project_root()
-        logger.info("Installing hostess")
-
-        if (Path(self.env.deps_dir) / "hostess").exists():
-            logger.info("Already exists, passing.")
-            return
-
-        run(
-            f"""
-            cd /tmp
-            curl -Lso hostess https://github.com/cbednarski/hostess/releases/download/v0.3.0/hostess_linux_386
-            chmod u+x hostess
-            mv hostess {self.env.deps_dir}/hostess
-            """,
-            progress_bar=True,
-        )
-        logger.info("Done")
+        for d in self.deps:
+            d.install()
 
     def bootstrap(self) -> None:
         # TODO: Disable this on prod
         self.chdir_to_project_root()
-        logger.info(f"Bootstraping {self.env.stage} cluster")
-
+        self.install_deps()
         self.device.bootstrap()
         self.add_hosts()
         self.prepare_all()
 
-        logger.info("Cluster is ready")
+        logger.info("Cluster is ready 🍰")

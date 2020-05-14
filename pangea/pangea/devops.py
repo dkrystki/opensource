@@ -4,9 +4,10 @@ import sys
 from getpass import getpass
 from typing import List
 
+from loguru import logger
+
 import environ
 import pexpect
-from loguru import logger
 from tqdm import tqdm
 
 environ = environ.Env()
@@ -50,7 +51,7 @@ def run(
 
     rets: List[str] = []
 
-    prompt = r"##PL_PROMPT##"
+    prompt = r"##PG_PROMPT##"
 
     p = pexpect.spawn("bash --rcfile /dev/null", env=os.environ, echo=False)
     p.delaybeforesend = None
@@ -85,7 +86,7 @@ def run(
         pbar = tqdm(total=len(commands))
 
     for c in commands:
-        if "PL_DEBUG" in environ:
+        if "PG_DEBUG" in environ:
             logger.debug(c)
 
         if print_output:

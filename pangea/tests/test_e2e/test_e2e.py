@@ -73,5 +73,33 @@ class TestCluster:
         assert Path("my_ingress/env_stage.py").exists()
         assert Path("my_ingress/env_prod.py").exists()
 
-    def test_bootstrap(self, shell):
+    def test_install_deps(self, shell):
         shell.sendline("cl bootstrap")
+        shell.expect(r"Installing dependencies ⏳", timeout=1)
+        shell.expect(r"Installing kubectl ⏳".encode("utf-8"), timeout=1)
+        shell.expect(r"Installing skaffold ⏳".encode("utf-8"), timeout=60)
+        shell.expect(r"Installing hostess ⏳".encode("utf-8"), timeout=60)
+        shell.expect(r"Installing helm ⏳".encode("utf-8"), timeout=60)
+
+    def test_bootstrap(self, deps, shell):
+        shell.sendline("cl bootstrap")
+        shell.expect(r"Installing dependencies ⏳", timeout=1)
+        shell.expect(r"kubectl already exists 👌".encode("utf-8"), timeout=1)
+        shell.expect(r"skaffold already exists 👌".encode("utf-8"), timeout=60)
+        shell.expect(r"hostess already exists 👌".encode("utf-8"), timeout=60)
+        shell.expect(r"helm already exists 👌".encode("utf-8"), timeout=60)
+
+        shell.expect(r"Creating kind cluster ⏳".encode("utf-8"), timeout=1)
+        shell.expect(r"Initializing helm ⏳".encode("utf-8"), timeout=300)
+        shell.expect(r"Adding hosts to /etc/hosts file", timeout=300)
+        shell.expect(r'Preparing app "ingress"', timeout=10)
+        shell.expect(r'Preparing app "registry"', timeout=10)
+        shell.expect(r"Cluster is ready 🍰".encode("utf-8"), timeout=10)
+
+        shell.sendline("kubectl get nodes")
+        shell.expect(
+            r".*sandbox-test-control-plane   Ready    master   .*   v1.15.7.*".encode(
+                "utf-8"
+            ),
+            timeout=3,
+        )

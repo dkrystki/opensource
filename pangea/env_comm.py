@@ -9,7 +9,7 @@ from envo import Env, VenvEnv
 class PangeaEnvComm(Env):
     class Meta(Env.Meta):
         root = Path(os.path.realpath(__file__)).parent
-        name = "pangea"
+        name = "pads"
 
     venv: VenvEnv
 

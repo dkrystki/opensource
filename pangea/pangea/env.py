@@ -26,6 +26,7 @@ class ClusterEnv(Env):
     kubectl_ver: str
     helm_ver: str
     kind_ver: str
+    hostess_ver: str
     debian_ver: str
     docker_ver: str
     device: Device
