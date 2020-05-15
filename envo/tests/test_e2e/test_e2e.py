@@ -157,3 +157,23 @@ class TestNested:
 
         new_prompt2 = new_prompt1.replace(b"sandbox", b"sb")
         s.expect(new_prompt2, timeout=1)
+
+    def test_child_importable(self, envo_prompt):
+        from envo.comm.utils import spawn
+
+        Path("__init__.py").touch()
+        os.chdir("child")
+        Path("__init__.py").touch()
+
+        s = spawn("envo test")
+        nested_prompt = envo_prompt.replace(b"sandbox", b"sandbox.child")
+        s.expect(nested_prompt, timeout=1)
+
+        test_script = Path("test_script.py")
+        content = "from env_test import Env\n"
+        content += "env = Env()\n"
+        content += 'print("ok")\n'
+        test_script.write_text(content)
+
+        s.sendline("python3 test_script.py")
+        s.expect("ok", timeout=1)

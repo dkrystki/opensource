@@ -140,6 +140,15 @@ class TestUnit:
         flake8()
         mypy()
 
+
+class TestNested:
+    @pytest.fixture(autouse=True)
+    def setup(self, mock_exit, sandbox, version, mocker, caplog):
+        mocker.patch("envo.scripts.Envo._start_files_watchdog")
+        os.environ = environ_before.copy()
+        yield
+        assert len(caplog.messages) == 0
+
     def test_parents_basic_functionality(self, child_env):
         os.chdir(test_root)
         parent_dir = Path(".").absolute() / "parent_env"

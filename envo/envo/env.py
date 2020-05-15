@@ -166,6 +166,8 @@ class Env(BaseEnv):
     def activate(self, owner_namespace: str = "") -> None:
         super().activate(owner_namespace)
 
+        self._set_pythonpath()
+
     def print_envs(self) -> None:
         self.activate()
         content = "".join([f"export {line}\n" for line in self.as_string()])
@@ -199,6 +201,17 @@ class Env(BaseEnv):
             return self.meta.parent.get_full_name() + "." + self.get_name()
         else:
             return self.get_name()
+
+    def _set_pythonpath(self) -> None:
+        if "PYTHONPATH" not in os.environ:
+            os.environ["PYTHONPATH"] = ""
+
+        os.environ["PYTHONPATH"] = (
+            str(self.meta.root.parent) + ":" + os.environ["PYTHONPATH"]
+        )
+
+        if self.meta.parent:
+            self.meta.parent._set_pythonpath()
 
 
 @dataclass
