@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from .env_comm import OpensourceEnvComm
+from opensource.env_comm import OpensourceEnvComm
 
 
 @dataclass
