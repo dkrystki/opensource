@@ -1,7 +1,18 @@
 import os
 from pathlib import Path
+from typing import List
 
 import pexpect as pexpect
+
+__all__ = [
+    "prompt",
+    "envo_prompt",
+    "spawn",
+    "shell",
+    "flake8",
+    "mypy",
+    "render_py_file",
+]
 
 prompt = r".*@.*$".encode("utf-8")
 envo_prompt = r"🛠\(sandbox\).*".encode("utf-8")
@@ -36,3 +47,11 @@ def mypy() -> None:
     assert b"Success: no issues found" in p
     os.chdir(str(original_dir))
     Path("__init__.py").unlink()
+
+
+def strs_in_regex(strings: List[str]) -> str:
+    """
+    Return regex that matches strings in any order.
+    """
+    ret = "".join([rf"(?=.*{s})" for s in strings])
+    return ret

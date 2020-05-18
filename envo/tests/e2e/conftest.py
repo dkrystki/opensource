@@ -28,8 +28,8 @@ def child_env() -> None:
     content = comm_file.read_text()
     content = content.splitlines(keepends=True)
     content.insert(0, "from sandbox.env_test import SandboxEnv\n")
-    content.pop(13)
-    content.insert(13, "        parent = SandboxEnv()\n")
+    content.pop(14)
+    content.insert(14, "        parent = SandboxEnv()\n")
     content = "".join(content)
     comm_file.write_text(content)
 

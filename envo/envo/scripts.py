@@ -18,8 +18,18 @@ from loguru import logger
 from envo import Env, comm
 from ilock import ILock
 
+__all__ = ["stage_emoji_mapping"]
+
 package_root = Path(os.path.realpath(__file__)).parent
 templates_dir = package_root / "templates"
+
+stage_emoji_mapping: Dict[str, str] = {
+    "comm": "",
+    "test": "🛠",
+    "local": "🐣",
+    "stage": "🤖",
+    "prod": "🔥",
+}
 
 
 class Envo:
@@ -29,13 +39,6 @@ class Envo:
         addons: List[str]
         init: bool
 
-    stage_emoji_mapping: Dict[str, str] = {
-        "comm": "",
-        "test": "🛠",
-        "local": "🐣",
-        "stage": "🤖",
-        "prod": "🔥",
-    }
     root: Path
     stage: str
     env_dirs: List[Path]
@@ -137,19 +140,14 @@ class Envo:
                 init_file.unlink()
 
     def _reload_modules(self) -> None:
-        abs_module = ""
         for d in reversed(self.env_dirs):
-            abs_module = abs_module + ("." if abs_module else "") + f"{d.name}"
             rel_module = f"{d.name}"
 
-            reload(import_module(f"{abs_module}.env_comm"))
             reload(import_module(f"{rel_module}.env_comm"))
             for f in d.glob("env*.py"):
                 if "comm" in f.stem:
                     continue
-                reload(import_module(f"{abs_module}.{f.stem}"))
-                if rel_module != abs_module:
-                    reload(import_module(f"{rel_module}.{f.stem}"))
+                reload(import_module(f"{rel_module}.{f.stem}"))
 
     def get_env(self) -> Env:
         package = self.env_dirs[0].name
@@ -160,8 +158,9 @@ class Envo:
             # time.sleep(random.uniform(0.0, 1.5))
             self._create_init_files()
 
+            self._reload_modules()
+
             try:
-                self._reload_modules()
                 env: Env
                 env = import_module(module_name).Env()  # type: ignore
                 return env
@@ -188,7 +187,7 @@ class Envo:
             "name": package_name,
             "package_name": package_name,
             "stage": self.se.stage,
-            "emoji": self.stage_emoji_mapping[self.se.stage],
+            "emoji": stage_emoji_mapping[self.se.stage],
             "selected_addons": self.se.addons,
         }
 

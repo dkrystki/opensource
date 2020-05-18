@@ -2,16 +2,19 @@ import os
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict
+from typing import TYPE_CHECKING, Any, Dict, Optional, Type
 
 from jinja2 import Template
 from loguru import logger
 
 import environ
-from envo import Env, Raw, VenvEnv
+from envo import Env, Raw
 from pangea.devops import run
 from pangea.env import ClusterEnv
 from pangea.kube import Namespace
+
+if TYPE_CHECKING:
+    from pangea.cluster import Cluster
 
 environ = environ.Env()
 
@@ -32,13 +35,10 @@ class AppEnv(BaseAppEnv):
     class Meta(BaseAppEnv.Meta):
         pass
 
-    venv: VenvEnv
     app_name: str
     bin_path: Path
     comm: Path
-    prebuild: bool
-    path: str
-    pythonpath: Raw[str]
+    path: Raw[str]
 
     def __init__(self) -> None:
         super().__init__()
@@ -48,40 +48,31 @@ class AppEnv(BaseAppEnv):
         self.path = os.environ["PATH"]
         self.path = f"{str(self.bin_path)}:{self.path}"
 
-        self.pythonpath = f"{str(self.root)}/comm/python"
-        self.pythonpath = f"{str(self.root.parent)}:{self.pythonpath}"
-
-        self.venv = VenvEnv(owner=self)
-
 
 class App:
-    @dataclass
-    class Sets:
-        name: str
-        root: Path
+    def __init__(self, Env: Type[Env]) -> None:
+        self.cluster: Optional["Cluster"] = None
+        self.namespace: Optional[Namespace] = None
 
-    @dataclass
-    class Links:
-        namespace: "Namespace"
+        self.env = Env.get_current_stage()
+        self.name = self.env.app_name
 
-    def __init__(self, se: Sets, li: Links) -> None:
-        self.se = se
-        self.li = li
+    def connect_to_cluster(self, cluster: "Cluster"):
+        self.cluster = cluster
+        self.namespace = self.cluster.namespaces[self.env.namespace]
 
     def chdir_to_root(self):
-        os.chdir(str(self.se.root))
+        os.chdir(str(self.env.meta.root))
 
     def deploy(self) -> None:
-        # TODO: only create when needed
-        self.li.namespace.create()
-        logger.info(f"🚀Deploying {self.se.name}.")
+        logger.info(f"🚀Deploying {self.env.name}.")
         self.chdir_to_root()
 
     def terminal(self) -> None:
         pass
 
     def delete(self) -> None:
-        logger.info(f"Delete {self.se.name}.")
+        logger.info(f"Delete {self.env.name}.")
         self.chdir_to_root()
 
     def prepare(self) -> None:
@@ -89,7 +80,7 @@ class App:
         Prepare app. Prebuild images etc.
         :return:
         """
-        logger.info(f'Preparing app "{self.se.name}"')
+        logger.info(f'Preparing app "{self.env.name}"')
 
 
 class Image:
@@ -268,6 +259,7 @@ class SkaffoldAppEnv(AppEnv):
     app_name: str
     src: Path
     helm_release_name: str
+    prebuild: bool
     src_image: str
     dockerfile_templ: Path
     image_name: str
@@ -281,25 +273,13 @@ class SkaffoldAppEnv(AppEnv):
 
 
 class SkaffoldApp(App):
-    @dataclass
-    class Sets(App.Sets):
-        pass
-
-    @dataclass
-    class Links(App.Links):
-        env: SkaffoldAppEnv
-        cluster_env: ClusterEnv
-
     env: SkaffoldAppEnv
     dockerfile: Dockerfile
     skaffold_file: Path
 
-    def __init__(self, se: Sets, li: Links) -> None:
-        super().__init__(se, li)
-        self.se = se
-        self.li = li
-
-        self.env = self.li.env
+    def __init__(self, Env: Type[SkaffoldAppEnv], ClusterEnv: Type[ClusterEnv]) -> None:
+        super().__init__(Env=Env)
+        self.cluster_env = ClusterEnv.get_current_stage()
 
         self.dockerfile = Dockerfile(
             se=Dockerfile.Sets(
@@ -307,7 +287,7 @@ class SkaffoldApp(App):
                 out_path=Path(f"Dockerfile.{self.env.stage}"),
                 base_image=self.env.base_image,
             ),
-            li=Dockerfile.Links(app_env=self.env, cluster_env=self.li.cluster_env),
+            li=Dockerfile.Links(app_env=self.env, cluster_env=self.cluster_env),
         )
 
         self.skaffold_file = Path(f"skaffold.{self.env.stage}.yaml")

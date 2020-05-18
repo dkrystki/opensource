@@ -1,6 +1,7 @@
 import inspect
 import os
 from dataclasses import dataclass, field, fields
+from importlib import import_module, reload
 from pathlib import Path
 from subprocess import Popen
 from tempfile import NamedTemporaryFile
@@ -129,11 +130,12 @@ class BaseEnv:
 class Env(BaseEnv):
     @dataclass
     class Meta(BaseEnv):
-        stage: str = field(init=False)
-        emoji: str = field(init=False)
+        stage: str = field(default="comm", init=False)
+        emoji: str = field(default="", init=False)
         name: str = field(init=False)
         root: Path = field(init=False)
         parent: Optional["Env"] = field(default=None, init=False)
+        version: str = field(default="0.1.0", init=False)
 
     root: Path
     stage: str
@@ -164,6 +166,9 @@ class Env(BaseEnv):
         return lines
 
     def activate(self, owner_namespace: str = "") -> None:
+        if self.meta.stage == "comm":
+            raise RuntimeError('Cannot activate env with "comm" stage!')
+
         super().activate(owner_namespace)
 
         self._set_pythonpath()
@@ -201,6 +206,14 @@ class Env(BaseEnv):
             return self.meta.parent.get_full_name() + "." + self.get_name()
         else:
             return self.get_name()
+
+    @classmethod
+    def get_current_stage(cls) -> "Env":
+        parent_module = cls.__module__.split(".")[0]
+        stage = os.environ["ENVO_STAGE"]
+        env = reload(import_module(f"{parent_module}.env_{stage}")).Env()
+
+        return env
 
     def _set_pythonpath(self) -> None:
         if "PYTHONPATH" not in os.environ:

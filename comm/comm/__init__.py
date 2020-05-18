@@ -1,6 +1,12 @@
 import sys
+from pathlib import Path
+from typing import Any, Dict
 
+import black
+from jinja2 import Template
 from loguru import logger
+
+__all__ = ["dir_name_to_class_name", "setup_logger", "render_py_file"]
 
 
 def dir_name_to_class_name(dir_name: str) -> str:
@@ -33,3 +39,16 @@ def setup_logger() -> None:
         level="ERROR",
         filter=lambda x: x["level"].name == "ERROR",
     )
+
+
+def render_file(template_path: Path, output: Path, context: Dict[str, Any]) -> None:
+    template = Template(template_path.read_text())
+    output.write_text(template.render(**context))
+
+
+def render_py_file(template_path: Path, output: Path, context: Dict[str, Any]) -> None:
+    render_file(template_path, output, context)
+    try:
+        black.main([str(output), "-q"])
+    except SystemExit:
+        pass

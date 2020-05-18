@@ -35,5 +35,5 @@ def env() -> Env:
 @fixture
 def cluster(env, mock_run) -> Cluster:
     Sandbox = import_module(f"sandbox.cluster").Sandbox
-    cluster = Sandbox(li=Sandbox.Links(), se=Sandbox.Sets(deploy_ingress=True), env=env)
+    cluster = Sandbox(env=env)
     return cluster

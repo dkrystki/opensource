@@ -112,7 +112,7 @@ class TestE2e:
         shell.expect(str(Path(".").absolute()), timeout=1)
 
 
-class TestNested:
+class TestParentChild:
     @pytest.fixture(autouse=True)
     def setup(self, sandbox, prompt, init, child_env):
         pass

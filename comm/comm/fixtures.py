@@ -7,7 +7,7 @@ import pexpect
 from loguru_caplog import loguru_caplog as caplog  # noqa: ignore F401
 from pytest import fixture
 
-from . import utils
+from . import test_utils
 
 root = Path(".").absolute()
 
@@ -37,16 +37,16 @@ def assert_no_stderr(capsys) -> Callable[[], None]:  # type: ignore
 
 @fixture(name="shell")
 def shell_fixture() -> pexpect.spawn:
-    from .utils import shell
+    from .test_utils import shell
 
     return shell()
 
 
 @fixture
 def envo_prompt() -> bytes:
-    return utils.envo_prompt
+    return test_utils.envo_prompt
 
 
 @fixture
 def prompt() -> bytes:
-    return utils.prompt
+    return test_utils.prompt

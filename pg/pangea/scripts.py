@@ -2,17 +2,19 @@
 import argparse
 import os
 import sys
+from importlib import import_module
 from pathlib import Path
-from typing import Any, Dict
 
-import black
-from jinja2 import Template
 from loguru import logger
 
-from envo.scripts import Envo
+import envo
 from pangea import comm, pkg_vars
 
 __all__ = []
+
+
+def impor_module():
+    pass
 
 
 class Pangea:
@@ -27,31 +29,31 @@ class Pangea:
             "cluster_name": self.cluster_name,
         }
 
-    def _render_py_file(
-        self, template_filename: str, output: Path, context: Dict[str, Any]
-    ) -> None:
-        template = Template((pkg_vars.templates_dir / template_filename).read_text())
-        output.write_text(template.render(**context))
-        try:
-            black.main([str(output), "-q"])
-        except SystemExit:
-            pass
-
     def create_env(self, stage: str) -> None:
         # render env_local
         env_templ_context = self.context.copy()
         env_templ_context.update(
-            {"stage": stage, "emoji": Envo.stage_emoji_mapping[stage]}
+            {"stage": stage, "emoji": envo.stage_emoji_mapping[stage]}
         )
-        self._render_py_file("env.py.templ", Path(f"env_{stage}.py"), env_templ_context)
+        comm.render_py_file(
+            pkg_vars.templates_dir / "env.py.templ",
+            Path(f"env_{stage}.py"),
+            env_templ_context,
+        )
 
     def create_cluster(self) -> None:
         # render cluster.py
         current_dir = Path(".").absolute()
 
         cluster_file = Path("cluster.py")
-        self._render_py_file("cluster.py.templ", cluster_file, self.context)
-        self._render_py_file("env_comm.py.templ", Path("env_comm.py"), self.context)
+        comm.render_py_file(
+            pkg_vars.templates_dir / "cluster.py.templ", cluster_file, self.context
+        )
+        comm.render_py_file(
+            pkg_vars.templates_dir / "env_comm.py.templ",
+            Path("env_comm.py"),
+            self.context,
+        )
 
         cluster_file.chmod(0o777)
 
@@ -69,6 +71,17 @@ class Pangea:
         os.chdir(str(current_dir))
 
         logger.info(f"Created cluster 🍰!")
+
+        sys.path.insert(0, str(current_dir.parent))
+        env = import_module(f"{current_dir.name}.env_local").Env()
+        env.activate()
+        cluster = import_module(
+            f"{current_dir.name}.cluster"
+        ).Cluster.get_current_cluster()
+        cluster.createapp("ingress", "system", "ingress")
+
+        sys.path.pop()
+
         logger.info('Activate 🐣 local environment with "envo"')
 
     def handle_command(self, args: argparse.Namespace) -> None:

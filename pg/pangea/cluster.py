@@ -1,20 +1,16 @@
 import collections
 import os
-import re
 import shutil
-import time
-from dataclasses import dataclass
 from importlib import import_module
 from pathlib import Path
 from typing import List, OrderedDict
 
-from jinja2 import Template
 from loguru import logger
 
 import environ
 import fire
-from pangea import apps, pkg_vars
-from pangea.deps import Dependency, Helm, Hostess, Kind, Kubectl, Skaffold
+from envo import stage_emoji_mapping
+from pangea import apps, comm, deps, devices, pkg_vars
 from pangea.devops import run
 from pangea.env import ClusterEnv
 from pangea.kube import Namespace
@@ -22,152 +18,7 @@ from pangea.kube import Namespace
 environ = environ.Env()
 
 
-__all__ = ["Cluster", "ClusterDevice", "Kind", "Microk8s"]
-
-
-class ClusterDevice:
-    env: ClusterEnv
-
-    def __init__(self, env: ClusterEnv):
-        self.env = env
-
-    def bootstrap(self) -> None:
-        pass
-
-    def _post_bootstrap(self) -> None:
-        logger.info("Initializing helm ⏳")
-        run(
-            f"""
-        helm init --wait --tiller-connection-timeout 600
-        kubectl apply -f {str(pkg_vars.package_root / "k8s/ingress-rbac.yaml")}
-        kubectl apply -f {str(pkg_vars.package_root / "k8s/rbac-storage-provisioner.yaml")}
-        kubectl create serviceaccount -n kube-system tiller
-        kubectl create clusterrolebinding tiller-cluster-admin \\
-            --clusterrole=cluster-admin --serviceaccount=kube-system:tiller
-        kubectl --namespace kube-system patch deploy tiller-deploy -p \\
-            '{{"spec":{{"template":{{"spec":{{"serviceAccount":"tiller"}} }} }} }}'
-        """,
-            progress_bar=True,
-        )
-
-    def get_ip(self) -> str:
-        raise NotImplementedError()
-
-
-class Kind(ClusterDevice):
-    def __init__(self, env: ClusterEnv):
-        super().__init__(env)
-
-    def bootstrap(self) -> None:
-        super().bootstrap()
-
-        logger.info("Creating kind cluster ⏳")
-
-        template = Template((pkg_vars.templates_dir / "kind.yaml.templ").read_text())
-        kind_file = Path(f"kind.{self.env.stage}.yaml")
-        context = {"env": self.env}
-        kind_file.write_text(template.render(**context))
-
-        Path(environ.str("KUBECONFIG")).unlink(missing_ok=True)
-        run(
-            f"""
-            kind delete cluster --name={self.env.device.name}
-            kind create cluster --config={str(kind_file)} --name={self.env.device.name}
-            """,
-            progress_bar=True,
-        )
-
-        ip = self.get_ip()
-
-        run(
-            f"""
-            docker exec {self.env.device.name}-control-plane bash -c "echo \\"{ip} \\
-            {self.env.registry.address}\\" >> /etc/hosts"
-            # For some reason dns resolution doesn't work on CI. This line fixes it
-            docker exec {self.env.device.name}-control-plane \\
-            bash -c "echo \\"nameserver 8.8.8.8\\" >> /etc/resolv.conf"
-            """
-        )
-
-        self._post_bootstrap()
-
-    def get_ip(self) -> str:
-        result = run(f"""kubectl describe nodes {self.env.device.name}""")
-        ip_phrase = re.search(r"InternalIP: .*", "\n".join(result)).group(0)
-        ip = ip_phrase.split(":")[1].strip()
-        return ip.strip()
-
-
-class Microk8s(ClusterDevice):
-    def __init__(self, env: ClusterEnv):
-        super().__init__(env)
-
-    def bootstrap(self) -> None:
-        super().bootstrap()
-
-        logger.info("Creating microk8s cluster")
-
-        self.env.kubeconfig.unlink(missing_ok=True)
-        run(
-            f"""
-        sudo snap remove microk8s
-        sudo snap install microk8s --classic --channel="{self.env.device.k8s_ver}"/stable
-        sudo sed -i "s/local.insecure-registry.io/{self.env.registry.address}/g" \\
-            /var/snap/microk8s/current/args/containerd-template.toml
-        sudo sed -i "s/http:\/\/localhost:32000/http:\/\/{self.env.registry.address}/g" \\
-            /var/snap/microk8s/current/args/containerd-template.toml
-        sudo microk8s.start
-
-        mkdir -p "$(dirname "$KUBECONFIG")"
-        sudo microk8s.config > "$KUBECONFIG"
-
-        sudo microk8s.enable dns
-        sudo microk8s.enable rbac
-        sudo microk8s.enable storage
-        sudo microk8s.enable ingress
-
-        sudo sh -c 'echo "--allow-privileged=true" >> /var/snap/microk8s/current/args/kube-apiserver'
-        sudo systemctl restart snap.microk8s.daemon-apiserver.service
-        """,
-            progress_bar=True,
-        )
-
-        time.sleep(30)
-
-        self._post_bootstrap()
-
-    def get_ip(self) -> str:
-        return "127.0.0.1"
-
-
-class AwsCluster(ClusterDevice):
-    def bootstrap(self) -> None:
-        logger.info("Creating aws cluster")
-
-        self.env.kubeconfig.unlink(missing_ok=True)
-
-        run(f"eksctl delete cluster=--name {self.env.device.name}", ignore_errors=True)
-        run(
-            f"""
-        eksctl create cluster --name={self.env.device.name} --region=ap-southeast-1 --nodegroup-name=standard-workers \\
-        --node-type=t3.medium --nodes=1 --nodes-min=1 --nodes-max=1 --ssh-access \\
-        --version={self.env.device.k8s_ver[:-2]} \\
-         --ssh-public-key=~/.ssh/id_rsa.pub --managed
-        eksctl utils write-kubeconfig --cluster={self.env.device.name} --kubeconfig={str(self.env.kubeconfig)}
-        """,
-            print_output=True,
-        )
-
-        self._post_bootstrap()
-
-    def get_ip(self) -> str:
-        result = run(f"""kubectl describe nodes""")
-        ip_phrase = re.search(r"ExternalIP: .*", "\n".join(result)).group(0)
-        ip = ip_phrase.split(":")[1].strip()
-        return ip.strip()
-
-
-devices = {"kind": Kind, "aws": AwsCluster, "microk8s": Microk8s}
+__all__ = ["Cluster"]
 
 
 class Cluster:
@@ -177,45 +28,40 @@ class Cluster:
     class Meta:
         name: str
 
-    @dataclass
-    class Links:
-        pass
-
-    @dataclass
-    class Sets:
-        deploy_ingress: bool = True
-
-    device: ClusterDevice
-    li: Links
-    se: Sets
+    device: devices.ClusterDevice
     senv: ClusterEnv
     namespaces: OrderedDict[str, Namespace]
-    deps: List[Dependency]
+    deps: List[deps.Dependency]
     python: apps.PythonUtils
     system: Namespace
 
-    def __init__(self, li: Links, se: Sets, env: ClusterEnv) -> None:
-        from pangea.apps.ingress import Ingress
-        from pangea.apps.registry import Registry
-
-        self.li = li
-        self.se = se
+    def __init__(self, env: ClusterEnv) -> None:
         self.env = env
 
-        self.device = devices[self.env.device.type](self.env)
+        self.device = devices.all[self.env.device.type](self.env)
 
         self.deps = [
-            Kubectl(
-                Kubectl.Sets(deps_dir=self.env.deps_dir, version=self.env.kubectl_ver)
+            deps.Kubectl(
+                deps.Kubectl.Sets(
+                    deps_dir=self.env.deps_dir, version=self.env.kubectl_ver
+                )
             ),
-            Kind(Kind.Sets(deps_dir=self.env.deps_dir, version=self.env.kind_ver)),
-            Skaffold(
-                Skaffold.Sets(deps_dir=self.env.deps_dir, version=self.env.skaffold_ver)
+            deps.Kind(
+                deps.Kind.Sets(deps_dir=self.env.deps_dir, version=self.env.kind_ver)
             ),
-            Hostess(
-                Hostess.Sets(deps_dir=self.env.deps_dir, version=self.env.hostess_ver)
+            deps.Skaffold(
+                deps.Skaffold.Sets(
+                    deps_dir=self.env.deps_dir, version=self.env.skaffold_ver
+                )
             ),
-            Helm(Helm.Sets(deps_dir=self.env.deps_dir, version=self.env.helm_ver)),
+            deps.Hostess(
+                deps.Hostess.Sets(
+                    deps_dir=self.env.deps_dir, version=self.env.hostess_ver
+                )
+            ),
+            deps.Helm(
+                deps.Helm.Sets(deps_dir=self.env.deps_dir, version=self.env.helm_ver)
+            ),
         ]
 
         self.namespaces = collections.OrderedDict()
@@ -225,37 +71,67 @@ class Cluster:
         )
 
         self.system = self.create_namespace("system")
-        if self.se.deploy_ingress:
-            self.system.add_app("ingress", Ingress)
 
-        self.system.add_app("registry", Registry)
+    @classmethod
+    def get_current_cluster(cls) -> "Cluster":
+        env_comm = import_module(f"{cls.Meta.name}.env_comm").Env()
+        env = env_comm.get_current_stage()
+
+        current_cluster = cls(env=env)
+        return current_cluster
 
     @classmethod
     def handle_command(cls) -> None:
-        stage = os.environ[f"ENVO_STAGE"]
-        env = import_module(f"{cls.Meta.name}.env_{stage}").Env()
-
-        current_cluster = cls(li=cls.Links(), se=cls.Sets(deploy_ingress=True), env=env)
+        current_cluster = cls.get_current_cluster()
         try:
             fire.Fire(current_cluster)
         except Cluster.ClusterException as exc:
             logger.error(exc)
 
-    def createapp(self, app_name: str, app_instance_name: str) -> None:
+    def createapp(self, app_name: str, namespace: str, app_instance_name: str) -> None:
         app_dir = pkg_vars.apps_dir / app_name
         if not app_dir.exists():
             raise self.ClusterException(f'App "{app_name}" does not exist 😓')
 
-        app_instance_dir = Path(app_instance_name)
+        app_instance_dir = Path(namespace) / Path(app_instance_name)
 
-        if app_instance_dir.exists():
+        if (app_instance_dir).exists():
             raise self.ClusterException(
-                f'App instance "{app_instance_dir}" already exists 😓'
+                f'App instance "{app_instance_name}" already exists in namespace "{namespace}" 😓'
             )
 
-        shutil.copytree(str(app_dir), str(app_instance_dir))
+        app_instance_dir.mkdir(parents=True)
+
+        context_base = {
+            "instance_class_name": comm.dir_name_to_class_name(app_instance_name),
+            "instance_name": app_instance_name,
+        }
+
+        comm.render_py_file(
+            app_dir / "templates/env_comm.py.templ",
+            app_instance_dir / "env_comm.py",
+            context=context_base,
+        )
+
+        for s in ["local", "test", "stage", "prod"]:
+            comm.render_py_file(
+                app_dir / f"templates/env.py.templ",
+                app_instance_dir / f"env_{s}.py",
+                context={"stage": s, "emoji": stage_emoji_mapping[s], **context_base},
+            )
+
+        comm.render_py_file(
+            app_dir / "templates/app.py.templ",
+            app_instance_dir / "app.py",
+            context={**context_base},
+        )
+
+        shutil.copy(app_dir / "values.yaml", app_instance_dir / "values.yaml")
+
+        Path(app_instance_dir / "__init__.py").touch()
+
         logger.info(
-            f'App instance "{app_instance_name}" of app "{app_name}" has been created 🍰'
+            f'Instance "{app_instance_name}" of app "{app_name}" has been created in namespace "{namespace}" 🍰'
         )
 
     def is_ci_job(self) -> bool:

@@ -1,0 +1,9 @@
+from pangea.apps.ingress import Ingress
+
+
+class {{ instance_class_name }}(Ingress):
+    def deploy(self) -> None:
+        super().deploy()
+
+    def delete(self) -> None:
+        super().delete()

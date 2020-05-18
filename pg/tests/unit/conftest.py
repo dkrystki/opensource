@@ -5,7 +5,7 @@ from typing import List
 from unittest.mock import MagicMock
 
 from pytest import fixture
-from tests.test_unit import utils
+from tests.unit import utils
 
 test_root = Path(os.path.realpath(__file__)).parent
 root = test_root.parent
@@ -60,3 +60,7 @@ def mock_run(mocker) -> MagicMock:
     magic_mock1.side_effect = run
     magic_mock2 = mocker.patch("pangea.kube.run")
     magic_mock2.side_effect = run
+    magic_mock3 = mocker.patch("pangea.deps.run")
+    magic_mock3.side_effect = run
+    magic_mock4 = mocker.patch("pangea.devices.run")
+    magic_mock4.side_effect = run

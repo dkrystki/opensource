@@ -5,18 +5,19 @@ from pathlib import Path
 import envo.scripts
 import pytest
 from envo.comm.utils import flake8, mypy
-from tests.test_unit.utils import command, test_root
+from tests.unit.utils import command, test_root
 
 environ_before = os.environ.copy()
 
 
 class TestUnit:
     @pytest.fixture(autouse=True)
-    def setup(self, mock_exit, sandbox, version, mocker, caplog):
+    def setup(self, mock_exit, sandbox, version, mocker, capsys):
         mocker.patch("envo.scripts.Envo._start_files_watchdog")
         os.environ = environ_before.copy()
         yield
-        assert len(caplog.messages) == 0
+        out, err = capsys.readouterr()
+        assert err == ""
 
     def test_creating(self, init):
         assert Path("env_comm.py").exists()
@@ -28,7 +29,7 @@ class TestUnit:
     def test_importing(self, init, env):
         assert str(env) == "sandbox"
         assert env.meta.stage == "test"
-        assert env.meta.emoji == envo.scripts.Envo.stage_emoji_mapping[env.meta.stage]
+        assert env.meta.emoji == envo.scripts.stage_emoji_mapping[env.meta.stage]
 
     def test_version(self, caplog):
         command("--version")
@@ -126,6 +127,13 @@ class TestUnit:
         assert os.environ["NOT_NESTED"] == "NOT_NESTED_TEST"
         assert os.environ["NESTED"] == "NESTED_TEST"
 
+    def test_get_current_stage(self, init, env_comm):
+        command("local", "--init")
+        command("stage", "--init")
+        command("local")
+
+        assert env_comm.get_current_stage().meta.stage == "local"
+
     def test_venv_addon(self):
         command("test", "--init=venv")
 
@@ -141,13 +149,14 @@ class TestUnit:
         mypy()
 
 
-class TestNested:
+class TestParentChild:
     @pytest.fixture(autouse=True)
-    def setup(self, mock_exit, sandbox, version, mocker, caplog):
+    def setup(self, mock_exit, sandbox, version, mocker, capsys):
         mocker.patch("envo.scripts.Envo._start_files_watchdog")
         os.environ = environ_before.copy()
         yield
-        assert len(caplog.messages) == 0
+        out, err = capsys.readouterr()
+        assert err == ""
 
     def test_parents_basic_functionality(self, child_env):
         os.chdir(test_root)
@@ -161,17 +170,20 @@ class TestNested:
         assert child_env.meta.parent.test_parent_var == "test_value"
         assert child_env.meta.parent.get_name() == "pa"
 
-        child_env.activate()
-
         assert os.environ["PA_TESTPARENTVAR"] == "test_value"
         assert os.environ["CH_TESTVAR"] == "test_var_value"
 
+        assert Path("__init__.py").exists()
+
         flake8()
         os.chdir(str(parent_dir))
-        mypy()
 
     def test_parents_variables_passed_through(self, child_env):
-        child_env.activate()
+        os.chdir(test_root)
+        child_dir = Path(".").absolute() / "parent_env/child_env"
+        os.chdir(str(child_dir))
+
+        command("test")
 
         assert "child_bin_dir" in os.environ["PATH"]
         assert "parent_bin_dir" in os.environ["PATH"]

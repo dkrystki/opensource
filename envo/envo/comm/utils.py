@@ -28,11 +28,18 @@ def mypy() -> None:
 
     original_dir = Path(".").absolute()
     package_name = original_dir.name
-    Path("__init__.py").touch()
+
+    init_exists = Path("__init__.py").exists()
+
+    if not init_exists:
+        Path("__init__.py").touch()
+
     os.chdir("..")
     environ = {"MYPYPATH": str(original_dir)}
     environ.update(os.environ)
     p = run(f"mypy {package_name}", env=environ, echo=False)
     assert b"Success: no issues found" in p
     os.chdir(str(original_dir))
-    Path("__init__.py").unlink()
+
+    if not init_exists:
+        Path("__init__.py").unlink()

@@ -1,4 +1,5 @@
 import os
+import shutil
 from pathlib import Path
 
 from pexpect import run
@@ -6,10 +7,6 @@ from pytest import fixture
 
 test_root = Path(os.path.realpath(__file__)).parent
 root = test_root.parent
-
-pytest_plugins = [
-    "pangea.comm.fixtures",
-]
 
 
 @fixture
@@ -19,4 +16,5 @@ def init() -> str:
 
 @fixture
 def deps() -> None:
-    pass
+    shutil.rmtree(".deps")
+    shutil.copytree("../../../.deps", ".deps")

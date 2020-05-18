@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 from pangea.cluster import Cluster
-from pangea.comm.utils import flake8
+from pangea.comm.test_utils import flake8
 from pangea.kube import Kube
 
 from .utils import command
@@ -80,21 +80,22 @@ class TestCluster:
         cluster.bootstrap()
 
         with pytest.raises(Cluster.ClusterException) as exc:
-            cluster.createapp("non_existent_app", "my_app")
+            cluster.createapp("non_existent_app", "flesh", "my_app")
 
-        assert str(exc.value) == 'App "non_existent_app" does not exist.'
+        assert str(exc.value) == 'App "non_existent_app" does not exist 😓'
 
     def test_create_app(self, cluster):
         cluster.bootstrap()
-        cluster.createapp("ingress", "my_ingress")
+        cluster.createapp("ingress", "flesh", "my_ingress")
 
-        assert Path("ingress").exists()
-        assert Path("ingress/values.yaml").exists()
-        assert Path("ingress/__init__.py").exists()
-        assert Path("ingress/env_local.py").exists()
-        assert Path("ingress/env_test.py").exists()
-        assert Path("ingress/env_stage.py").exists()
-        assert Path("ingress/env_prod.py").exists()
+        assert Path("flesh/my_ingress").exists()
+        assert Path("flesh/my_ingress/values.yaml").exists()
+        assert Path("flesh/my_ingress/__init__.py").exists()
+        assert Path("flesh/my_ingress/app.py").exists()
+        assert Path("flesh/my_ingress/env_local.py").exists()
+        assert Path("flesh/my_ingress/env_test.py").exists()
+        assert Path("flesh/my_ingress/env_stage.py").exists()
+        assert Path("flesh/my_ingress/env_prod.py").exists()
 
     def test_deploy(self, cluster):
         cluster.bootstrap()

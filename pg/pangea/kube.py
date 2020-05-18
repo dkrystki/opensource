@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type
+from typing import TYPE_CHECKING, Dict, List, Optional
 
 from loguru import logger
 
@@ -132,25 +132,8 @@ class Namespace:
         self.name = name
         self.apps: Dict[str, "App"] = {}
 
-    def add_app(
-        self,
-        name: str,
-        app_cls: Type["App"],
-        extra_links: Optional[Dict[str, Any]] = None,
-    ) -> "App":
-        root = self.li.env.root
-        if self.name != "flesh":
-            root /= self.name
-        root /= name
-
-        if not extra_links:
-            extra_links = {}
-
-        app = app_cls(
-            se=app_cls.Sets(name=name, root=root),
-            li=app_cls.Links(namespace=self, **extra_links),
-        )
-        self.apps[app.se.name] = app
+    def add_app(self, app: "App") -> "App":
+        self.apps[app.env.app_name] = app
         return app
 
     def exists(self) -> bool:
