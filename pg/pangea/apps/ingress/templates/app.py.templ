@@ -1,9 +1,13 @@
-from pangea.apps.ingress import Ingress
-
+from pangea.apps.ingress.app import Ingress
+from {{ app_package }}.env_comm import {{ instance_class_name }}EnvComm
 
 class {{ instance_class_name }}(Ingress):
+    EnvClass = {{ instance_class_name }}EnvComm
     def deploy(self) -> None:
         super().deploy()
 
     def delete(self) -> None:
         super().delete()
+
+
+App = {{ instance_class_name }}

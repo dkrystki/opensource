@@ -1,6 +1,7 @@
 import os
 from dataclasses import dataclass
 from pathlib import Path
+from typing import List
 
 from envo import BaseEnv, Env, Raw
 
@@ -38,6 +39,7 @@ class ClusterEnv(Env):
     path: Raw[str]
     kubeconfig: Raw[Path]
     pythonpath: Raw[str]
+    apps: List[str]
 
     def __init__(self):
         super().__init__()
@@ -52,3 +54,5 @@ class ClusterEnv(Env):
         self.path = f"{str(self.bin_dir)}:{self.path}"
 
         self.pythonpath = str(self.meta.root.parent.absolute())
+
+        self.apps = ["system.ingress"]

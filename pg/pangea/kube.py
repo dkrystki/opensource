@@ -1,5 +1,8 @@
+import typing
+from collections import OrderedDict
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Dict, List, Optional
+from pathlib import Path
+from typing import List, Optional, TYPE_CHECKING, Tuple
 
 from loguru import logger
 
@@ -7,7 +10,6 @@ import environ
 from pangea.devops import CommandError, run
 
 if TYPE_CHECKING:
-    from env import Env
     from pangea.apps import App
 
 environ = environ.Env()
@@ -35,7 +37,6 @@ class HelmRelease:
     @dataclass
     class Links:
         namespace: "Namespace"
-        env: "Env"
 
     def __init__(self, li: Links, release_name: str) -> None:
         self.li: HelmRelease.Links = li
@@ -45,6 +46,7 @@ class HelmRelease:
     def install(
         self,
         chart: str,
+        values: Path,
         version: Optional[str] = None,
         upgrade: bool = True,
         repo: str = "",
@@ -65,18 +67,16 @@ class HelmRelease:
         if repo:
             run(f"helm repo add {repo}")
 
-        values_path = f"values/{self.li.env.stage}/{self.release_name}.yaml"
-
         run(
             f"""helm {"upgrade --install" if upgrade else "install"} \
                 {"" if upgrade else "--name"} {self.namespaced_name} \
                 --namespace={self.li.namespace.name} \
                 --set fullnameOverride={self.release_name} \
-                -f {values_path} \
+                -f {str(values)} \
                 {"--force" if upgrade else ""} --wait=true \
                 --timeout=250000 \
                 "{chart}" \
-                {f"--version='{version}'" if version else ""} \
+                {f"--version='{version}'"} \
             """
         )
 
@@ -123,25 +123,21 @@ class Pod:
 
 
 class Namespace:
-    @dataclass
-    class Links:
-        env: "Env"
+    apps: typing.OrderedDict[str, "App"]
 
-    def __init__(self, li: Links, name: str) -> None:
-        self.li = li
+    def __init__(self, name: str) -> None:
         self.name = name
-        self.apps: Dict[str, "App"] = {}
+        self.apps = OrderedDict()
 
-    def add_app(self, app: "App") -> "App":
-        self.apps[app.env.app_name] = app
-        return app
+    def add_app(self, app: "App") -> None:
+        self.apps[app.env.get_name()] = app
+        i: Tuple[str, App]
+        self.apps = OrderedDict(
+            sorted(self.apps.items(), key=lambda i: i[1].env.deploy_priority)
+        )
 
     def exists(self) -> bool:
         return self.name in Kube.Namespace.list()
-
-    def deploy(self) -> None:
-        for n, a in self.apps.items():
-            a.deploy()
 
     def deploy_app(self, app_name: str) -> None:
         self.create()
@@ -222,6 +218,5 @@ class Namespace:
         :return:
         """
         return HelmRelease(
-            li=HelmRelease.Links(namespace=self, env=self.li.env),
-            release_name=release_name,
+            li=HelmRelease.Links(namespace=self), release_name=release_name,
         )

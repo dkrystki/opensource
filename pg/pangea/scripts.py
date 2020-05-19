@@ -75,10 +75,8 @@ class Pangea:
         sys.path.insert(0, str(current_dir.parent))
         env = import_module(f"{current_dir.name}.env_local").Env()
         env.activate()
-        cluster = import_module(
-            f"{current_dir.name}.cluster"
-        ).Cluster.get_current_cluster()
-        cluster.createapp("ingress", "system", "ingress")
+        Cluster = import_module(f"{current_dir.name}.cluster").Cluster
+        Cluster.createapp("ingress", "system", "ingress")
 
         sys.path.pop()
 

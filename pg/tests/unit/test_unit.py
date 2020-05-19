@@ -67,38 +67,34 @@ class TestCluster:
         yield
         assert_no_stderr()
 
-    def test_get_ip(self, cluster):
-        cluster.bootstrap()
+    def test_get_ip(self, cluster, bootstrap):
         assert cluster.device.get_ip() == "172.18.0.2"
 
-    def test_bootstrap(self, cluster):
-        cluster.bootstrap()
+    def test_namespaces(self, cluster):
+        assert "system" in cluster.namespaces
+        assert len(cluster.namespaces) == 1
 
+    def test_bootstrap(self, cluster, bootstrap):
         assert Path("kind.test.yaml").exists()
 
-    def test_create_app_not_exists(self, cluster):
-        cluster.bootstrap()
-
+    def test_create_app_not_exists(self, cluster, bootstrap):
         with pytest.raises(Cluster.ClusterException) as exc:
             cluster.createapp("non_existent_app", "flesh", "my_app")
 
         assert str(exc.value) == 'App "non_existent_app" does not exist 😓'
 
-    def test_create_app(self, cluster):
-        cluster.bootstrap()
-        cluster.createapp("ingress", "flesh", "my_ingress")
+    def test_create_app(self, cluster, bootstrap, ingress_app):
+        app_dir = Path("flesh/ingress")
 
-        assert Path("flesh/my_ingress").exists()
-        assert Path("flesh/my_ingress/values.yaml").exists()
-        assert Path("flesh/my_ingress/__init__.py").exists()
-        assert Path("flesh/my_ingress/app.py").exists()
-        assert Path("flesh/my_ingress/env_local.py").exists()
-        assert Path("flesh/my_ingress/env_test.py").exists()
-        assert Path("flesh/my_ingress/env_stage.py").exists()
-        assert Path("flesh/my_ingress/env_prod.py").exists()
+        assert app_dir.exists()
+        assert (app_dir / "values.yaml").exists()
+        assert (app_dir / "__init__.py").exists()
+        assert (app_dir / "env_local.py").exists()
+        assert (app_dir / "env_test.py").exists()
+        assert (app_dir / "env_stage.py").exists()
+        assert (app_dir / "env_prod.py").exists()
 
-    def test_deploy(self, cluster):
-        cluster.bootstrap()
+    def test_deploy(self, cluster, bootstrap, mocker):
         cluster.deploy()
 
         assert Path("kind.test.yaml").exists()

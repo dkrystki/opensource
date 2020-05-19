@@ -1,9 +1,9 @@
-import collections
-import os
 import shutil
+import typing
+from collections import OrderedDict
 from importlib import import_module
 from pathlib import Path
-from typing import List, OrderedDict
+from typing import Dict, List, Tuple
 
 from loguru import logger
 
@@ -11,6 +11,7 @@ import environ
 import fire
 from envo import stage_emoji_mapping
 from pangea import apps, comm, deps, devices, pkg_vars
+from pangea.apps import App
 from pangea.devops import run
 from pangea.env import ClusterEnv
 from pangea.kube import Namespace
@@ -30,7 +31,7 @@ class Cluster:
 
     device: devices.ClusterDevice
     senv: ClusterEnv
-    namespaces: OrderedDict[str, Namespace]
+    namespaces: typing.OrderedDict[str, Namespace]
     deps: List[deps.Dependency]
     python: apps.PythonUtils
     system: Namespace
@@ -64,13 +65,13 @@ class Cluster:
             ),
         ]
 
-        self.namespaces = collections.OrderedDict()
+        self.namespaces = OrderedDict()
 
         self.python = apps.PythonUtils(
             se=apps.PythonUtils.Sets(root=self.env.root), li=apps.PythonUtils.Links()
         )
 
-        self.system = self.create_namespace("system")
+        self._create_apps()
 
     @classmethod
     def get_current_cluster(cls) -> "Cluster":
@@ -88,15 +89,16 @@ class Cluster:
         except Cluster.ClusterException as exc:
             logger.error(exc)
 
-    def createapp(self, app_name: str, namespace: str, app_instance_name: str) -> None:
+    @classmethod
+    def createapp(cls, app_name: str, namespace: str, app_instance_name: str) -> None:
         app_dir = pkg_vars.apps_dir / app_name
         if not app_dir.exists():
-            raise self.ClusterException(f'App "{app_name}" does not exist 😓')
+            raise cls.ClusterException(f'App "{app_name}" does not exist 😓')
 
         app_instance_dir = Path(namespace) / Path(app_instance_name)
 
         if (app_instance_dir).exists():
-            raise self.ClusterException(
+            raise cls.ClusterException(
                 f'App instance "{app_instance_name}" already exists in namespace "{namespace}" 😓'
             )
 
@@ -143,13 +145,19 @@ class Cluster:
         else:
             return "sudo"
 
-    def chdir_to_project_root(self) -> None:
-        os.chdir(str(self.env.root))
+    def _create_apps(self) -> None:
+        for a in self.env.apps:
+            namespace_name: str
+            app_name: str
+            namespace_name, app_name = a.split(".")
+            if namespace_name not in self.namespaces:
+                self.namespaces[namespace_name] = Namespace(name=namespace_name)
 
-    def create_namespace(self, name) -> Namespace:
-        namespace = Namespace(li=Namespace.Links(env=self.env,), name=name)
-        self.namespaces[name] = namespace
-        return namespace
+            namespace = self.namespaces[namespace_name]
+            app = import_module(f"{self.env.get_name()}.{a}.app").App(
+                cluster=self, namespace=namespace
+            )
+            namespace.add_app(app)
 
     def prepare_all(self) -> None:
         for n in self.namespaces.values():
@@ -157,32 +165,23 @@ class Cluster:
                 a.prepare()
 
     def deploy(self) -> None:
-        self.chdir_to_project_root()
+        logger.info(f'Deploying to "{self.env.stage}" ⏳')
         run("helm repo update")
 
-        self.system.deploy()
-
-        n: Namespace
-        for n in self.namespaces.values():
-            if n.name == "system":
-                continue
-
-            n.deploy()
+        a: App
+        for a in self.get_apps().values():
+            a.deploy()
 
     def add_hosts(self) -> None:
         logger.info("Adding hosts to /etc/hosts file")
 
     def reset(self) -> None:
-        self.chdir_to_project_root()
-
         n: Namespace
         for n in reversed(self.namespaces.values()):
             if n.exists():
                 n.delete()
 
     def install_deps(self) -> None:
-        self.chdir_to_project_root()
-
         logger.opt(colors=True).info("<blue>Installing dependencies </blue>⏳")
 
         for d in self.deps:
@@ -190,10 +189,21 @@ class Cluster:
 
     def bootstrap(self) -> None:
         # TODO: Disable this on prod
-        self.chdir_to_project_root()
         self.install_deps()
         self.device.bootstrap()
         self.add_hosts()
         self.prepare_all()
 
         logger.info("Cluster is ready 🍰")
+
+    def get_apps(self) -> Dict[str, App]:
+        ret = {}
+
+        n: Namespace
+        for n in self.namespaces.values():
+            ret.update(n.apps)
+
+        i: Tuple[str, App]
+        ret = OrderedDict(sorted(ret.items(), key=lambda i: i[1].env.deploy_priority))
+
+        return ret

@@ -1,19 +1,26 @@
+
 from pangea.apps import App
+from pangea.cluster import Cluster
+from pangea.kube import Namespace
 
 __all__ = ["Ingress"]
 
 
 class Ingress(App):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, cluster: Cluster, namespace: Namespace):
+        super().__init__(cluster, namespace)
 
     def deploy(self) -> None:
         super().deploy()
 
-        self.li.namespace.helm(self.se.name).install("stable/nginx-ingress", "1.34.2")
+        self.namespace.helm(self.env.get_name()).install(
+            "stable/nginx-ingress",
+            values=self.env.root / "values.yaml",
+            version="1.34.2",
+        )
 
         # Kind needs it
-        self.li.namespace.kubectl(
+        self.namespace.kubectl(
             """patch deployments ingress-controller -p '{"spec":{"template":{"spec":{"containers":["""
             """{"name":"nginx-ingress-controller","ports":[{"containerPort":80,"hostPort":80},"""
             """{"containerPort":443,"hostPort":443}]}]}}}}'"""
@@ -22,4 +29,4 @@ class Ingress(App):
     def delete(self) -> None:
         super().delete()
 
-        self.li.namespace.helm(self.se.name).delete()
+        self.namespace.helm(self.env.get_name()).delete()

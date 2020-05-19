@@ -15,6 +15,12 @@ def init() -> str:
 
 
 @fixture
+def bootstrap(shell) -> None:
+    shell.sendline("cl bootstrap")
+    shell.expect(r"Cluster is ready", timeout=600)
+
+
+@fixture
 def deps() -> None:
     shutil.rmtree(".deps")
-    shutil.copytree("../../../.deps", ".deps")
+    shutil.copytree(root.parent / ".deps", ".deps")

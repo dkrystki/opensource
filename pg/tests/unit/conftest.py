@@ -10,14 +10,20 @@ from tests.unit import utils
 test_root = Path(os.path.realpath(__file__)).parent
 root = test_root.parent
 
-pytest_plugins = [
-    "pangea.comm.fixtures",
-]
-
 
 @fixture
 def init() -> None:
     utils.command("--init")
+
+
+@fixture
+def bootstrap(cluster) -> None:
+    cluster.bootstrap()
+
+
+@fixture
+def ingress_app(cluster) -> None:
+    cluster.createapp("ingress", "flesh", "ingress")
 
 
 @fixture

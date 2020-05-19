@@ -2,7 +2,7 @@ import os
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, Optional, Type
+from typing import Any, Dict, TYPE_CHECKING, Type
 
 from jinja2 import Template
 from loguru import logger
@@ -35,10 +35,10 @@ class AppEnv(BaseAppEnv):
     class Meta(BaseAppEnv.Meta):
         pass
 
-    app_name: str
     bin_path: Path
     comm: Path
     path: Raw[str]
+    deploy_priority: int
 
     def __init__(self) -> None:
         super().__init__()
@@ -50,37 +50,35 @@ class AppEnv(BaseAppEnv):
 
 
 class App:
-    def __init__(self, Env: Type[Env]) -> None:
-        self.cluster: Optional["Cluster"] = None
-        self.namespace: Optional[Namespace] = None
+    cluster: "Cluster"
+    namespace: "Namespace"
+    env: AppEnv
+    EnvClass: Type[AppEnv]
 
-        self.env = Env.get_current_stage()
-        self.name = self.env.app_name
+    def __init__(self, cluster: "Cluster", namespace: "Namespace") -> None:
+        self.env = self.EnvClass.get_current_stage()
+        self.name = self.env.get_name()
 
-    def connect_to_cluster(self, cluster: "Cluster"):
         self.cluster = cluster
-        self.namespace = self.cluster.namespaces[self.env.namespace]
-
-    def chdir_to_root(self):
-        os.chdir(str(self.env.meta.root))
+        self.namespace = namespace
 
     def deploy(self) -> None:
-        logger.info(f"🚀Deploying {self.env.name}.")
-        self.chdir_to_root()
+        logger.info(
+            f"🚀Deploying {self.env.get_name()} to namespace {self.namespace.name}."
+        )
 
     def terminal(self) -> None:
         pass
 
     def delete(self) -> None:
-        logger.info(f"Delete {self.env.name}.")
-        self.chdir_to_root()
+        logger.info(f"Delete {self.env.get_name()}.")
 
     def prepare(self) -> None:
         """
         Prepare app. Prebuild images etc.
         :return:
         """
-        logger.info(f'Preparing app "{self.env.name}"')
+        logger.info(f'Preparing app "{self.env.get_name()}"')
 
 
 class Image:

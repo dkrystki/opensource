@@ -12,9 +12,6 @@ class {{ class_name }}(cluster.Cluster):
         super().__init__(env)
         self.env = env
 
-        self.aux = self.create_namespace("aux")
-        self.flesh = self.create_namespace("flesh")
-
 
 Cluster = {{ class_name }}
 

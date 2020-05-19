@@ -11,5 +11,7 @@ class IngressEnvComm(AppEnv):
     def __init__(self) -> None:
         super().__init__()
 
+        self.deploy_priority = 100
+
 
 Env = IngressEnvComm

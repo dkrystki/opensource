@@ -23,6 +23,8 @@ class {{ class_name }}EnvComm(ClusterEnv):
         self.debian_ver = "buster"
         self.docker_ver = "18.09.9"
 
+        self.apps.extend([])
+
 
 Env = {{ class_name }}EnvComm
 

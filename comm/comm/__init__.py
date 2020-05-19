@@ -6,7 +6,7 @@ import black
 from jinja2 import Template
 from loguru import logger
 
-__all__ = ["dir_name_to_class_name", "setup_logger", "render_py_file"]
+__all__ = ["dir_name_to_class_name", "setup_logger", "render_py_file", "render_file"]
 
 
 def dir_name_to_class_name(dir_name: str) -> str:
