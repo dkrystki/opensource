@@ -4,7 +4,7 @@ from pathlib import Path
 
 import envo.scripts
 import pytest
-from envo.comm.utils import flake8, mypy
+from envo.comm.test_utils import flake8, mypy
 from tests.unit.utils import command, test_root
 
 environ_before = os.environ.copy()

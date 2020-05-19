@@ -13,8 +13,8 @@ def spawn(command: str) -> pexpect.spawn:
 
 
 def shell() -> pexpect.spawn:
-    p = pexpect.spawn("envo test")
-    p.expect(envo_prompt, timeout=2)
+    p = pexpect.spawn("envo test", timeout=1)
+    p.expect(envo_prompt)
     return p
 
 

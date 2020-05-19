@@ -209,7 +209,7 @@ class Env(BaseEnv):
 
     @classmethod
     def get_current_stage(cls) -> "Env":
-        parent_module = cls.__module__.split(".")[0]
+        parent_module = ".".join(cls.__module__.split(".")[0:-1])
         stage = os.environ["ENVO_STAGE"]
         env = reload(import_module(f"{parent_module}.env_{stage}")).Env()
 
