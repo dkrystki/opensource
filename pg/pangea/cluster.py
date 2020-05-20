@@ -165,12 +165,14 @@ class Cluster:
                 a.prepare()
 
     def deploy(self) -> None:
-        logger.info(f'Deploying to "{self.env.stage}" ⏳')
+        logger.info(f'Deploying to "{self.env.stage}" 🚀')
         run("helm repo update")
 
         a: App
         for a in self.get_apps().values():
             a.deploy()
+
+        logger.info(f"All done 👌")
 
     def add_hosts(self) -> None:
         logger.info("Adding hosts to /etc/hosts file")

@@ -90,6 +90,11 @@ class TestCluster:
 
     def test_deploy(self, deps, bootstrap, shell):
         shell.sendline("cl deploy")
+        shell.expect(r'Deploying to "test"')
+        shell.expect(
+            strs_in_regex(["Deploy", "ingress", "namespace", "system"]), timeout=10
+        )
+        shell.expect(r"All done", timeout=300)
 
 
 class TestApps:
@@ -111,10 +116,10 @@ class TestApps:
         shell.expect(strs_in_regex(['"ingresst"', "not exist"]))
 
     def test_create_app(self, shell):
-        shell.sendline("cl createapp ingress flesh my_ingress")
-        shell.expect(strs_in_regex(['"my_ingress"', '"ingress"', '"flesh"', "created"]))
+        shell.sendline("cl createapp registry system registry")
+        shell.expect(strs_in_regex(['"registry"', '"registry"', '"system"', "created"]))
 
-        app_dir = Path("flesh/my_ingress")
+        app_dir = Path("system/registry")
 
         assert app_dir.exists()
         assert (app_dir / "values.yaml").exists()

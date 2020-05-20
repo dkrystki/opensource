@@ -80,6 +80,15 @@ class Kind(ClusterDevice):
             """
         )
 
+        # load common images
+        tiller_image = f"gcr.io/kubernetes-helm/tiller:v{self.env.helm_ver}"
+        run(
+            f"""
+            docker pull {tiller_image}
+            kind load {tiller_image}
+            """
+        )
+
         self._post_bootstrap()
 
     def get_ip(self) -> str:

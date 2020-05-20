@@ -2,7 +2,7 @@ import os
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, TYPE_CHECKING, Type
+from typing import TYPE_CHECKING, Any, Dict, Type
 
 from jinja2 import Template
 from loguru import logger
@@ -64,7 +64,7 @@ class App:
 
     def deploy(self) -> None:
         logger.info(
-            f"🚀Deploying {self.env.get_name()} to namespace {self.namespace.name}."
+            f"Deploying {self.env.get_name()} to namespace {self.namespace.name} 🚀"
         )
 
     def terminal(self) -> None:

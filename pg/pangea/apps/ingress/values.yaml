@@ -72,9 +72,6 @@ controller:
   ##
   ingressClass: nginx
 
-  # labels to add to the deployment metadata
-  deploymentLabels: {}
-
   # labels to add to the pod container metadata
   podLabels: {}
   #  key: value
@@ -116,9 +113,8 @@ controller:
 
   ## Additional command line arguments to pass to nginx-ingress-controller
   ## E.g. to specify the default SSL certificate you can use
-  ## extraArgs:
-  ##   default-ssl-certificate: "<namespace>/<secret_name>"
-  extraArgs: {}
+#  extraArgs:
+#     default-ssl-certificate: "system/tls-secret"
 
   ## Additional environment variables to set
   extraEnvs: []
@@ -152,11 +148,10 @@ controller:
   ## Node tolerations for server scheduling to nodes with taints
   ## Ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/
   ##
-  tolerations: []
-  #  - key: "key"
-  #    operator: "Equal|Exists"
-  #    value: "value"
-  #    effect: "NoSchedule|PreferNoSchedule|NoExecute(1.6 only)"
+  tolerations:
+    - key: "node-role.kubernetes.io/master"
+      operator: "Equal"
+      effect: "NoSchedule"
 
   ## Affinity and anti-affinity
   ## Ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity
@@ -193,7 +188,8 @@ controller:
   ## Node labels for controller pod assignment
   ## Ref: https://kubernetes.io/docs/user-guide/node-selection/
   ##
-  nodeSelector: {}
+  nodeSelector:
+    ingress-ready: "true"
 
   ## Liveness and readiness probe values
   ## Ref: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes
@@ -280,7 +276,7 @@ controller:
       http: http
       https: https
 
-    type: LoadBalancer
+    type: ClusterIP
 
     # type: NodePort
     # nodePorts:
@@ -494,9 +490,6 @@ defaultBackend:
   ##
   podSecurityContext: {}
 
-  # labels to add to the deployment metadata
-  deploymentLabels: {}
-
   # labels to add to the pod container metadata
   podLabels: {}
   #  key: value
@@ -539,9 +532,6 @@ defaultBackend:
     type: ClusterIP
 
   priorityClassName: ""
-
-# If provided, the value will be used as the `release` label instead of .Release.Name
-releaseLabelOverride: ""
 
 ## Enable RBAC as per https://github.com/kubernetes/ingress/tree/master/examples/rbac/nginx and https://github.com/kubernetes/ingress/issues/266
 rbac:
