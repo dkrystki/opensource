@@ -23,6 +23,12 @@ def setup_logger() -> None:
 
     logger.add(
         sys.stdout,
+        format="<blue>{message}</blue>",
+        level="DEBUG",
+        filter=lambda x: x["level"].name == "DEBUG",
+    )
+    logger.add(
+        sys.stdout,
         format="<bold>{message}</bold>",
         level="INFO",
         filter=lambda x: x["level"].name == "INFO",

@@ -4,8 +4,9 @@ from pathlib import Path
 from typing import List
 from unittest.mock import MagicMock
 
-from pytest import fixture
 from tests.unit import utils
+
+from pytest import fixture
 
 test_root = Path(os.path.realpath(__file__)).parent
 root = test_root.parent
@@ -30,7 +31,7 @@ def ingress_app(cluster) -> None:
 def mock_run(mocker) -> MagicMock:
     def ret(string: str) -> List[str]:
         string = inspect.cleandoc(string)
-        return string.splitlines()
+        return [string]
 
     def run(
         command: str,
@@ -46,6 +47,14 @@ def mock_run(mocker) -> MagicMock:
               Hostname:    sandbox-test-control-plane
             Capacity:"""
             )
+        if command == "kubectl get nodes":
+            return ret(
+                """
+                NAME                         STATUS     ROLES    AGE   VERSION
+                sandbox-test-control-plane   Ready      master   12s   v1.15.7
+                """
+            )
+
         if command == "kubectl get namespaces":
             return ret(
                 """

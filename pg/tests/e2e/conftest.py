@@ -24,3 +24,15 @@ def bootstrap(shell) -> None:
 def deps() -> None:
     shutil.rmtree(".deps")
     shutil.copytree(root.parent / ".deps", ".deps")
+
+
+@fixture
+def docker_images() -> None:
+    docker_images = [
+        "quay.io/kubernetes-ingress-controller/nginx-ingress-controller:0.30.0",
+        "k8s.gcr.io/defaultbackend-amd64:1.5",
+    ]
+
+    for i in docker_images:
+        run(f"docker pull {i}")
+        run(f"kind load docker-image {i} --name sandbox-test")

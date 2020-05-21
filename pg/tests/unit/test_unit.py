@@ -16,7 +16,6 @@ class TestKube:
         assert_no_stderr()
 
     def test_get_namespaces(self, cluster):
-        cluster.bootstrap()
         assert Kube.Namespace.list() == [
             "aux",
             "default",
@@ -27,6 +26,17 @@ class TestKube:
             "local-path-storage",
             "system",
         ]
+
+    def test_nodes_ready(self, cluster, mocker):
+        assert Kube.Node.is_all_ready()
+
+        magic_mock2 = mocker.patch("pangea.kube.run")
+        magic_mock2.return_value = [
+            """NAME                         STATUS     ROLES    AGE   VERSION
+                                       sandbox-test-control-plane   NotReady   master   12s   v1.15.7"""
+        ]
+
+        assert not Kube.Node.is_all_ready()
 
 
 class TestPangea:

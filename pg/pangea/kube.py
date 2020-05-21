@@ -2,7 +2,7 @@ import typing
 from collections import OrderedDict
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Optional, TYPE_CHECKING, Tuple
+from typing import TYPE_CHECKING, List, Optional, Tuple
 
 from loguru import logger
 
@@ -16,19 +16,26 @@ environ = environ.Env()
 
 
 class Kube:
+    class Node:
+        @classmethod
+        def is_all_ready(cls) -> bool:
+            status = run("kubectl get nodes")[0]
+            return "NotReady" not in status
+
     class Namespace:
         @classmethod
         def list(cls) -> List[str]:
-            raw = run("kubectl get namespaces")[1:]
+            raw = run("kubectl get namespaces")[0].splitlines()[1:]
             # skip header
             ret = []
             for r in list(raw):
                 ret.append(r.split()[0])
+
             return ret
 
         @classmethod
         def create(cls, name: str) -> None:
-            run(f"kubectl create {name}")
+            run(f"kubectl create namespace {name}")
 
 
 class HelmRelease:
@@ -74,7 +81,7 @@ class HelmRelease:
                 --set fullnameOverride={self.release_name} \
                 -f {str(values)} \
                 {"--force" if upgrade else ""} --wait=true \
-                --timeout=250000 \
+                --timeout=250000s \
                 "{chart}" \
                 {f"--version='{version}'"} \
             """
@@ -184,7 +191,7 @@ class Namespace:
         self.kubectl(f"wait --for=condition=ready pod {pod_name} --timeout={timeout}s")
 
     def _add_pullsecret(self) -> None:
-        env = self.li.env
+        env = self.env
         logger.info(f"🚀Adding pull secret to {self.name}")
         self.kubectl(
             "create secret docker-registry pullsecret "
@@ -192,23 +199,13 @@ class Namespace:
             f"--docker-password={env.registry.password} --dry-run -o yaml | kubectl apply -f -"
         )
 
-    def create(self, enable_istio: bool = True, add_pull_secret: bool = True) -> None:
+    def create(self) -> None:
         """
         Create namespace if doesn't exist.
-        :param enable_istio:
-        :param add_pull_secret:
         :return:
         """
         if self.name not in Kube.Namespace.list():
             Kube.Namespace.create(name=self.name)
-
-        if enable_istio:
-            run(
-                f"kubectl label namespace {self.name} istio-injection=enabled --overwrite"
-            )
-
-        if add_pull_secret:
-            self._add_pullsecret()
 
     def helm(self, release_name: str) -> HelmRelease:
         """

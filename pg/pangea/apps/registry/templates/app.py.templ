@@ -1,0 +1,13 @@
+from pangea.apps.registry.app import Registry
+from {{ app_package }}.env_comm import {{ instance_class_name }}EnvComm
+
+class {{ instance_class_name }}(Registry):
+    EnvClass = {{ instance_class_name }}EnvComm
+    def deploy(self) -> None:
+        super().deploy()
+
+    def delete(self) -> None:
+        super().delete()
+
+
+App = {{ instance_class_name }}

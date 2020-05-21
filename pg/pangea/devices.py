@@ -26,20 +26,7 @@ class ClusterDevice:
         pass
 
     def _post_bootstrap(self) -> None:
-        logger.info("Initializing helm ⏳")
-        run(
-            f"""
-        helm init --wait --tiller-connection-timeout 600
-        kubectl apply -f {str(pkg_vars.package_root / "k8s/ingress-rbac.yaml")}
-        kubectl apply -f {str(pkg_vars.package_root / "k8s/rbac-storage-provisioner.yaml")}
-        kubectl create serviceaccount -n kube-system tiller
-        kubectl create clusterrolebinding tiller-cluster-admin \\
-            --clusterrole=cluster-admin --serviceaccount=kube-system:tiller
-        kubectl --namespace kube-system patch deploy tiller-deploy -p \\
-            '{{"spec":{{"template":{{"spec":{{"serviceAccount":"tiller"}} }} }} }}'
-        """,
-            progress_bar=True,
-        )
+        pass
 
     def get_ip(self) -> str:
         raise NotImplementedError()
@@ -77,15 +64,6 @@ class Kind(ClusterDevice):
             # For some reason dns resolution doesn't work on CI. This line fixes it
             docker exec {self.env.device.name}-control-plane \\
             bash -c "echo \\"nameserver 8.8.8.8\\" >> /etc/resolv.conf"
-            """
-        )
-
-        # load common images
-        tiller_image = f"gcr.io/kubernetes-helm/tiller:v{self.env.helm_ver}"
-        run(
-            f"""
-            docker pull {tiller_image}
-            kind load {tiller_image}
             """
         )
 

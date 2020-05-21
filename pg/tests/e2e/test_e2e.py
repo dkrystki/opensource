@@ -57,7 +57,7 @@ class TestCluster:
         )
 
         shell.sendline("kind version")
-        shell.expect(r"kind v0\.7\.0 go1\.13\.6 linux/amd64")
+        shell.expect(r"kind v0\.8\.1 go1\.14\.2 linux/amd64")
 
         shell.sendline("skaffold version")
         shell.expect(r"v1\.6\.0")
@@ -66,7 +66,7 @@ class TestCluster:
         shell.expect(r"hostess version 0\.3\.0", timeout=2)
 
         shell.sendline("helm version")
-        shell.expect(r'Client: &version\.Version\{SemVer:"v2\.15\.2", .*')
+        shell.expect(r'version.BuildInfo{Version:"v3\.2\.1"')
 
     def test_bootstrap(self, deps, shell):
         shell.sendline("cl bootstrap")
@@ -78,17 +78,17 @@ class TestCluster:
         shell.expect(r"helm already exists")
 
         shell.expect(r"Creating kind cluster")
-        shell.expect(r"Initializing helm", timeout=300)
-        shell.expect(r"Adding hosts to /etc/hosts file", timeout=300)
-        shell.expect(r"Cluster is ready", timeout=10)
+        shell.expect(r"Adding hosts to /etc/hosts file", timeout=100)
+        shell.expect(r"Waiting for nodes")
+        shell.expect(r"Cluster is ready", timeout=30)
 
         shell.sendline("kubectl get nodes")
         shell.expect(
             r".*sandbox\-test\-control\-plane   Ready    master   .*   v1\.15\.7.*",
-            timeout=3,
+            timeout=1,
         )
 
-    def test_deploy(self, deps, bootstrap, shell):
+    def test_deploy(self, deps, bootstrap, docker_images, shell):
         shell.sendline("cl deploy")
         shell.expect(r'Deploying to "test"')
         shell.expect(

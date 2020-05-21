@@ -1,0 +1,21 @@
+import os
+from dataclasses import dataclass
+from pathlib import Path
+
+from pangea.apps import AppEnv
+from pangea.apps.registry import env_comm
+
+
+@dataclass
+class {{ instance_class_name }}EnvComm(env_comm.RegistryEnvComm):
+    class Meta(AppEnv.Meta):
+        root = Path(os.path.realpath(__file__)).parent
+        name = "{{ instance_name }}"
+        parent = None
+
+    def __init__(self) -> None:
+        super().__init__()
+
+
+
+Env = {{ instance_class_name }}EnvComm

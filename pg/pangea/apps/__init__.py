@@ -74,6 +74,9 @@ class App:
         logger.info(f"Delete {self.env.get_name()}.")
 
     def prepare(self) -> None:
+        pass
+
+    def pre_prepare(self) -> None:
         """
         Prepare app. Prebuild images etc.
         :return:

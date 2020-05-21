@@ -3,6 +3,7 @@
 from pg.pangea.deps import Kubectl, Skaffold, Hostess, Helm, Kind
 from pg.env_local import PangeaEnv
 
+
 env = PangeaEnv()
 
 deps_dir = env.deps_dir
@@ -18,3 +19,4 @@ deps = [
 
 for d in deps:
     d.install()
+

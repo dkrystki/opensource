@@ -1,4 +1,5 @@
 import shutil
+import time
 import typing
 from collections import OrderedDict
 from importlib import import_module
@@ -14,7 +15,7 @@ from pangea import apps, comm, deps, devices, pkg_vars
 from pangea.apps import App
 from pangea.devops import run
 from pangea.env import ClusterEnv
-from pangea.kube import Namespace
+from pangea.kube import Kube, Namespace
 
 environ = environ.Env()
 
@@ -168,6 +169,9 @@ class Cluster:
         logger.info(f'Deploying to "{self.env.stage}" 🚀')
         run("helm repo update")
 
+        for n in self.namespaces.values():
+            n.create()
+
         a: App
         for a in self.get_apps().values():
             a.deploy()
@@ -196,7 +200,20 @@ class Cluster:
         self.add_hosts()
         self.prepare_all()
 
+        logger.info("Waiting for nodes ⏳")
+        self._wait_until_ready()
+
         logger.info("Cluster is ready 🍰")
+
+    def _wait_until_ready(self):
+        for i in range(30):
+            if not Kube.Node.is_all_ready():
+                time.sleep(1)
+            else:
+                return
+        raise self.ClusterException(
+            "Experienced a timeout waiting for the nodes to be ready."
+        )
 
     def get_apps(self) -> Dict[str, App]:
         ret = {}

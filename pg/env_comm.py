@@ -31,8 +31,8 @@ class PangeaEnvComm(Env):
         self.skaffold_ver = "1.6.0"
         self.kubectl_ver = "1.17.0"
         self.hostess_ver = "0.3.0"
-        self.helm_ver = "2.15.2"
-        self.kind_ver = "0.7.0"
+        self.helm_ver = "3.2.1"
+        self.kind_ver = "0.8.1"
 
         self.deps_dir = self.meta.root / ".deps"
         self.bin_dir = self.meta.root / ".bin"
