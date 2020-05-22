@@ -25,7 +25,7 @@ class Pangea:
         self.class_name = comm.dir_name_to_class_name(self.cluster_name)
 
         self.context = {
-            "class_name": self.class_name,
+            "cluster_class_name": self.class_name,
             "cluster_name": self.cluster_name,
         }
 

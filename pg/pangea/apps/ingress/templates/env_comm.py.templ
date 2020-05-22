@@ -3,19 +3,21 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from pangea.apps import AppEnv
-from pangea.apps.ingress import env_comm
+from {{ cluster_name }}.env_comm import {{ cluster_class_name }}EnvComm
 
 
 @dataclass
-class {{ instance_class_name }}EnvComm(env_comm.IngressEnvComm):
+class {{ instance_class_name }}EnvComm(AppEnv):
     class Meta(AppEnv.Meta):
         root = Path(os.path.realpath(__file__)).parent
         name = "{{ instance_name }}"
-        parent = None
+        parent_env_comm = {{ cluster_class_name }}EnvComm
+        version = "1.34.2"
 
     def __init__(self) -> None:
         super().__init__()
 
+        self.deploy_priority = 100
 
 
 Env = {{ instance_class_name }}EnvComm

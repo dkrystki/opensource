@@ -6,15 +6,14 @@ secrets:
 ingress:
   enabled: true
   hosts:
-    - shangren.registry.local
+    - {{ ingress.host }}
   annotations:
     nginx.ingress.kubernetes.io/proxy-body-size: "0"
+    nginx.ingress.kubernetes.io/ingress.class: "nginx"
 
 service:
   type: ClusterIP
-    port: 5000
-    protocol: TCP
-    targetPort: 80
+  port: 80
 
 persistence:
   enabled: true

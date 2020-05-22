@@ -1,11 +1,12 @@
 import os
 from pathlib import Path
 
+from tests.utils import change_file
+
 import pexpect
 import pytest
 from envo.comm.test_utils import spawn
 from pexpect import run
-from tests.utils import change_file
 
 
 class TestE2e:
@@ -114,7 +115,7 @@ class TestE2e:
 
 class TestParentChild:
     @pytest.fixture(autouse=True)
-    def setup(self, sandbox, prompt, init, child_env):
+    def setup(self, sandbox, prompt, init, init_child_env):
         pass
 
     def test_init(self, envo_prompt):

@@ -1,9 +1,6 @@
 import os
-from importlib import import_module, reload
 from pathlib import Path
 
-from envo import Env
-from pangea.cluster import Cluster
 from pytest import fixture
 
 test_root = Path(os.path.realpath(__file__)).parent
@@ -15,6 +12,13 @@ pytest_plugins = [
 
 
 @fixture
+def add_registry_app() -> None:
+    from tests import utils
+
+    utils.add_registry_app()
+
+
+@fixture
 def version() -> None:
     file = root / "pangea/__version__.py"
     file.touch()
@@ -23,17 +27,3 @@ def version() -> None:
     yield
 
     file.unlink()
-
-
-@fixture
-def env() -> Env:
-    reload(import_module("sandbox.env_comm"))
-    env = reload(import_module("sandbox.env_test")).Env()
-    return env
-
-
-@fixture
-def cluster(env, mock_run) -> Cluster:
-    Sandbox = import_module(f"sandbox.cluster").Sandbox
-    cluster = Sandbox(env=env)
-    return cluster

@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Any, Dict
 
 import black
-from jinja2 import Template
+from jinja2 import StrictUndefined, Template
 from loguru import logger
 
 __all__ = ["dir_name_to_class_name", "setup_logger", "render_py_file", "render_file"]
@@ -48,7 +48,7 @@ def setup_logger() -> None:
 
 
 def render_file(template_path: Path, output: Path, context: Dict[str, Any]) -> None:
-    template = Template(template_path.read_text())
+    template = Template(template_path.read_text(), undefined=StrictUndefined)
     output.write_text(template.render(**context))
 
 

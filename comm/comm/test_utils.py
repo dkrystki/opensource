@@ -18,12 +18,12 @@ envo_prompt = r"🛠\(sandbox\).*".encode("utf-8")
 
 
 def spawn(command: str) -> pexpect.spawn:
-    s = pexpect.spawn(command, echo=False)
+    s = pexpect.spawn(command, echo=False, timeout=1)
     return s
 
 
 def shell() -> pexpect.spawn:
-    p = pexpect.spawn("envo test", timeout=1)
+    p = spawn("envo test")
     p.expect(envo_prompt)
     return p
 

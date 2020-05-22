@@ -39,6 +39,7 @@ class Cluster:
 
     def __init__(self, env: ClusterEnv) -> None:
         self.env = env
+        self.env.validate()
 
         self.device = devices.all[self.env.device.type](self.env)
 
@@ -54,11 +55,6 @@ class Cluster:
             deps.Skaffold(
                 deps.Skaffold.Sets(
                     deps_dir=self.env.deps_dir, version=self.env.skaffold_ver
-                )
-            ),
-            deps.Hostess(
-                deps.Hostess.Sets(
-                    deps_dir=self.env.deps_dir, version=self.env.hostess_ver
                 )
             ),
             deps.Helm(
@@ -96,18 +92,27 @@ class Cluster:
         if not app_dir.exists():
             raise cls.ClusterException(f'App "{app_name}" does not exist 😓')
 
-        app_instance_dir = Path(namespace) / Path(app_instance_name)
+        namespace_dir = Path(namespace)
+        app_instance_dir = namespace_dir / Path(app_instance_name)
+        cluster_name = Path(".").absolute().name
+
+        if not namespace_dir.exists():
+            namespace_dir.mkdir()
+            (namespace_dir / Path("__init__.py")).touch()
 
         if (app_instance_dir).exists():
             raise cls.ClusterException(
                 f'App instance "{app_instance_name}" already exists in namespace "{namespace}" 😓'
             )
 
-        app_instance_dir.mkdir(parents=True)
+        app_instance_dir.mkdir()
 
         context_base = {
+            "cluster_name": cluster_name,
+            "cluster_class_name": comm.dir_name_to_class_name(cluster_name),
             "instance_class_name": comm.dir_name_to_class_name(app_instance_name),
             "instance_name": app_instance_name,
+            "namespace": namespace,
         }
 
         comm.render_py_file(
@@ -155,8 +160,11 @@ class Cluster:
                 self.namespaces[namespace_name] = Namespace(name=namespace_name)
 
             namespace = self.namespaces[namespace_name]
+            app_env = import_module(
+                f"{self.env.get_name()}.{a}.env_comm"
+            ).Env.get_stage(self.env.stage)
             app = import_module(f"{self.env.get_name()}.{a}.app").App(
-                cluster=self, namespace=namespace
+                cluster=self, namespace=namespace, env=app_env
             )
             namespace.add_app(app)
 
@@ -176,10 +184,23 @@ class Cluster:
         for a in self.get_apps().values():
             a.deploy()
 
+        self.add_hosts()
+
         logger.info(f"All done 👌")
 
     def add_hosts(self) -> None:
-        logger.info("Adding hosts to /etc/hosts file")
+        logger.info("Adding hosts to .hosts file")
+
+        file_content = []
+
+        device_ip = self.device.get_ip()
+        for a in self.get_apps().values():
+            if a.env.host:
+                file_content.append(f"{device_ip} {a.env.host}")
+
+        file_content = "\n".join(file_content) + "\n"
+
+        self.env.hostaliases.write_text(file_content)
 
     def reset(self) -> None:
         n: Namespace
@@ -197,7 +218,6 @@ class Cluster:
         # TODO: Disable this on prod
         self.install_deps()
         self.device.bootstrap()
-        self.add_hosts()
         self.prepare_all()
 
         logger.info("Waiting for nodes ⏳")
@@ -206,7 +226,7 @@ class Cluster:
         logger.info("Cluster is ready 🍰")
 
     def _wait_until_ready(self):
-        for i in range(30):
+        for i in range(60):
             if not Kube.Node.is_all_ready():
                 time.sleep(1)
             else:

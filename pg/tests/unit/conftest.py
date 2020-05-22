@@ -2,11 +2,13 @@ import inspect
 import os
 from pathlib import Path
 from typing import List
-from unittest.mock import MagicMock
 
 from tests.unit import utils
 
+from envo import Env
+from pangea.cluster import Cluster
 from pytest import fixture
+from unit import utils
 
 test_root = Path(os.path.realpath(__file__)).parent
 root = test_root.parent
@@ -18,17 +20,18 @@ def init() -> None:
 
 
 @fixture
-def bootstrap(cluster) -> None:
+def bootstrap() -> None:
+    cluster = utils.cluster()
     cluster.bootstrap()
 
 
 @fixture
-def ingress_app(cluster) -> None:
-    cluster.createapp("ingress", "flesh", "ingress")
+def cluster_ip() -> str:
+    return "172.18.0.2"
 
 
 @fixture
-def mock_run(mocker) -> MagicMock:
+def mock_run(mocker, cluster_ip) -> None:
     def ret(string: str) -> List[str]:
         string = inspect.cleandoc(string)
         return [string]
@@ -41,9 +44,9 @@ def mock_run(mocker) -> MagicMock:
     ) -> List[str]:
         if command == "kubectl describe nodes sandbox-test":
             return ret(
-                """
+                f"""
             Addresses:
-              InternalIP:  172.18.0.2
+              InternalIP:  {cluster_ip}
               Hostname:    sandbox-test-control-plane
             Capacity:"""
             )
@@ -79,3 +82,13 @@ def mock_run(mocker) -> MagicMock:
     magic_mock3.side_effect = run
     magic_mock4 = mocker.patch("pangea.devices.run")
     magic_mock4.side_effect = run
+
+
+@fixture
+def env() -> Env:
+    return utils.env()
+
+
+@fixture
+def cluster() -> Cluster:
+    return utils.cluster()

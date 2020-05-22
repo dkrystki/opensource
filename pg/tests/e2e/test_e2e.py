@@ -78,7 +78,6 @@ class TestCluster:
         shell.expect(r"helm already exists")
 
         shell.expect(r"Creating kind cluster")
-        shell.expect(r"Adding hosts to /etc/hosts file", timeout=100)
         shell.expect(r"Waiting for nodes")
         shell.expect(r"Cluster is ready", timeout=30)
 
@@ -94,6 +93,7 @@ class TestCluster:
         shell.expect(
             strs_in_regex(["Deploy", "ingress", "namespace", "system"]), timeout=10
         )
+        shell.expect(strs_in_regex(["Adding", "hosts"]), timeout=60)
         shell.expect(r"All done", timeout=300)
 
 
@@ -102,7 +102,7 @@ class TestApps:
     def setup(self, sandbox, version, init):
         pass
 
-    def test_create_app_already_exists(self, shell):
+    def test_create_already_exists(self, shell):
         shell.sendline("cl createapp ingress flesh my_ingress")
         shell.expect(strs_in_regex(['"my_ingress"', '"flesh"', '"ingress"', "created"]))
 
@@ -111,11 +111,11 @@ class TestApps:
             strs_in_regex(['"my_ingress"', '"flesh"', '"ingress"', "already exists"])
         )
 
-    def test_create_app_unknown_app(self, shell):
+    def test_create_unknown(self, shell):
         shell.sendline("cl createapp ingresst flesh my_ingress")
         shell.expect(strs_in_regex(['"ingresst"', "not exist"]))
 
-    def test_create_app(self, shell):
+    def test_create(self, shell, envo_prompt):
         shell.sendline("cl createapp registry system registry")
         shell.expect(strs_in_regex(['"registry"', '"registry"', '"system"', "created"]))
 
@@ -131,5 +131,18 @@ class TestApps:
 
         os.chdir(str(app_dir))
 
-        e = spawn("envo")
-        e.expect()
+        e = spawn("envo test")
+        new_propmp = envo_prompt.replace(b"sandbox", b"sandbox.registry")
+        e.expect(new_propmp)
+
+    def test_deploy(self, deps, bootstrap, docker_images, shell, create_registry_app):
+        shell.sendline("cl deploy")
+
+        shell.expect(
+            strs_in_regex(["Deploy", "registry", "namespace", "system"]), timeout=10
+        )
+
+        shell.expect(r"All done", timeout=300)
+
+        shell.sendline("curl sandbox.registry.test")
+        shell.expect(r"fds")

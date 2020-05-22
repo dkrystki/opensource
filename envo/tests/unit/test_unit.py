@@ -2,10 +2,11 @@ import os
 from importlib import import_module, reload
 from pathlib import Path
 
+from tests.unit.utils import command, test_root
+
 import envo.scripts
 import pytest
 from envo.comm.test_utils import flake8, mypy
-from tests.unit.utils import command, test_root
 
 environ_before = os.environ.copy()
 
@@ -165,10 +166,10 @@ class TestParentChild:
 
         os.chdir(str(child_dir))
         command("test")
-        assert hasattr(child_env.meta, "parent")
+        assert child_env.parent is not None
         assert child_env.test_var == "test_var_value"
-        assert child_env.meta.parent.test_parent_var == "test_value"
-        assert child_env.meta.parent.get_name() == "pa"
+        assert child_env.parent.test_parent_var == "test_value"
+        assert child_env.parent.get_name() == "pa"
 
         assert os.environ["PA_TESTPARENTVAR"] == "test_value"
         assert os.environ["CH_TESTVAR"] == "test_var_value"
@@ -177,6 +178,9 @@ class TestParentChild:
 
         flake8()
         os.chdir(str(parent_dir))
+
+    def test_get_full_name(self, child_env):
+        assert child_env.get_full_name() == "pa.ch"
 
     def test_parents_variables_passed_through(self, child_env):
         os.chdir(test_root)

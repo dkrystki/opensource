@@ -39,6 +39,7 @@ class ClusterEnv(Env):
     path: Raw[str]
     kubeconfig: Raw[Path]
     pythonpath: Raw[str]
+    hostaliases: Raw[Path]
     apps: List[str]
 
     def __init__(self):
@@ -56,3 +57,5 @@ class ClusterEnv(Env):
         self.pythonpath = str(self.meta.root.parent.absolute())
 
         self.apps = ["system.ingress"]
+
+        self.hostaliases = self.meta.root / ".hosts"

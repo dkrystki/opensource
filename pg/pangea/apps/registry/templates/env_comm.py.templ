@@ -2,20 +2,32 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
+from envo import BaseEnv
+
 from pangea.apps import AppEnv
-from pangea.apps.registry import env_comm
+from {{ cluster_name }}.env_comm import {{ cluster_class_name }}EnvComm
 
 
 @dataclass
-class {{ instance_class_name }}EnvComm(env_comm.RegistryEnvComm):
+class {{ instance_class_name }}EnvComm(AppEnv):
+    @dataclass
+    class Ingress(BaseEnv):
+        host: str
+
     class Meta(AppEnv.Meta):
         root = Path(os.path.realpath(__file__)).parent
         name = "{{ instance_name }}"
-        parent = None
+        parent_env_comm = {{ cluster_class_name }}EnvComm
+        version = "1.9.2"
+
+    ingress: Ingress
 
     def __init__(self) -> None:
         super().__init__()
 
+        self.deploy_priority = 90
+        self.host = f"{self.parent.get_name()}.registry.{self.stage}"
+        self.ingress = self.Ingress(host=self.host)
 
 
 Env = {{ instance_class_name }}EnvComm

@@ -1,14 +1,12 @@
 from dataclasses import dataclass
 
 from tests.unit.parent_env.child_env.env_comm import ChildEnvComm
-from tests.unit.parent_env.env_test import ParentEnv
 
 
 @dataclass
 class ChildEnv(ChildEnvComm):
     class Meta(ChildEnvComm.Meta):
         stage = "test"
-        parent = ParentEnv()
         emoji = "🛠"
 
     def __init__(self) -> None:

@@ -14,7 +14,7 @@ def init() -> None:
 
 
 @fixture
-def child_env() -> None:
+def init_child_env() -> None:
     cwd = Path(".").absolute()
     child_dir = Path("child")
     if child_dir.exists():
@@ -27,9 +27,9 @@ def child_env() -> None:
     comm_file = Path("env_comm.py")
     content = comm_file.read_text()
     content = content.splitlines(keepends=True)
-    content.insert(0, "from sandbox.env_test import SandboxEnv\n")
+    content.insert(0, "from sandbox.env_comm import SandboxEnvComm\n")
     content.pop(14)
-    content.insert(14, "        parent = SandboxEnv()\n")
+    content.insert(14, "        parent_env_comm = SandboxEnvComm\n")
     content = "".join(content)
     comm_file.write_text(content)
 

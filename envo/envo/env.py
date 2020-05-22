@@ -5,7 +5,7 @@ from importlib import import_module, reload
 from pathlib import Path
 from subprocess import Popen
 from tempfile import NamedTemporaryFile
-from typing import TYPE_CHECKING, Any, Generic, List, Optional, TypeVar, Union
+from typing import TYPE_CHECKING, Any, Generic, List, Optional, Type, TypeVar, Union
 
 from loguru import logger
 
@@ -60,16 +60,19 @@ class BaseEnv:
                 class_attr: Any = getattr(self.__class__, f)
             else:
                 class_attr = None
+
             if (
-                not inspect.ismethod(attr)
-                and not (
-                    class_attr is not None and inspect.isdatadescriptor(class_attr)
-                )
-                and not f.startswith("_")
-                and not inspect.isclass(attr)
-                and f != "meta"
+                inspect.ismethod(attr)
+                or (class_attr is not None and inspect.isdatadescriptor(class_attr))
+                or f.startswith("_")
+                # parent_env_comm is a special case here, we have to exclude it
+                or (f != "parent_env_comm" and inspect.isclass(attr))
+                or f == "meta"
+                or f == "parent"
             ):
-                var_names.add(f)
+                continue
+
+            var_names.add(f)
 
         unset = field_names - var_names
         undeclr = var_names - field_names
@@ -134,7 +137,7 @@ class Env(BaseEnv):
         emoji: str = field(default="", init=False)
         name: str = field(init=False)
         root: Path = field(init=False)
-        parent: Optional["Env"] = field(default=None, init=False)
+        parent_env_comm: Optional[Type["Env"]] = field(default=None, init=False)
         version: str = field(default="0.1.0", init=False)
 
     root: Path
@@ -149,8 +152,11 @@ class Env(BaseEnv):
         self.stage = self.meta.stage
         self.envo_stage = self.stage
 
-        if self.meta.parent:
-            self.meta.parent.activate()
+        self.parent = None
+
+        if self.meta.parent_env_comm:
+            self.parent = self.meta.parent_env_comm.get_stage(self.stage)
+            self.parent.activate()
 
         super().__init__(self.meta.name)
 
@@ -202,8 +208,8 @@ class Env(BaseEnv):
         return Popen(["bash", "--rcfile", f"{bash_rc.name}"])
 
     def get_full_name(self) -> str:
-        if self.meta.parent:
-            return self.meta.parent.get_full_name() + "." + self.get_name()
+        if self.parent:
+            return self.parent.get_full_name() + "." + self.get_name()
         else:
             return self.get_name()
 
@@ -212,7 +218,12 @@ class Env(BaseEnv):
         parent_module = ".".join(cls.__module__.split(".")[0:-1])
         stage = os.environ["ENVO_STAGE"]
         env = reload(import_module(f"{parent_module}.env_{stage}")).Env()
+        return env
 
+    @classmethod
+    def get_stage(cls, stage: str) -> "Env":
+        parent_module = ".".join(cls.__module__.split(".")[0:-1])
+        env = reload(import_module(f"{parent_module}.env_{stage}")).Env()
         return env
 
     def _set_pythonpath(self) -> None:
@@ -223,8 +234,8 @@ class Env(BaseEnv):
             str(self.meta.root.parent) + ":" + os.environ["PYTHONPATH"]
         )
 
-        if self.meta.parent:
-            self.meta.parent._set_pythonpath()
+        if self.parent:
+            self.parent._set_pythonpath()
 
 
 @dataclass

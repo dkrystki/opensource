@@ -2,13 +2,14 @@ import os
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, Type
+from typing import TYPE_CHECKING, Any, Dict, Optional, Type
 
 from jinja2 import Template
 from loguru import logger
 
 import environ
 from envo import Env, Raw
+from pangea import comm
 from pangea.devops import run
 from pangea.env import ClusterEnv
 from pangea.kube import Namespace
@@ -24,8 +25,6 @@ class BaseAppEnv(Env):
     class Meta(Env.Meta):
         pass
 
-    app_name: str
-
     def __init__(self):
         super().__init__()
 
@@ -40,6 +39,9 @@ class AppEnv(BaseAppEnv):
     path: Raw[str]
     deploy_priority: int
 
+    # host to be added to /etc/hosts file
+    host: Optional[str]
+
     def __init__(self) -> None:
         super().__init__()
         self.comm = self.root / "comm"
@@ -47,16 +49,18 @@ class AppEnv(BaseAppEnv):
 
         self.path = os.environ["PATH"]
         self.path = f"{str(self.bin_path)}:{self.path}"
+        self.host = None
 
 
 class App:
     cluster: "Cluster"
     namespace: "Namespace"
     env: AppEnv
-    EnvClass: Type[AppEnv]
 
-    def __init__(self, cluster: "Cluster", namespace: "Namespace") -> None:
-        self.env = self.EnvClass.get_current_stage()
+    def __init__(self, cluster: "Cluster", namespace: "Namespace", env: AppEnv) -> None:
+        self.env = env
+        self.env.validate()
+
         self.name = self.env.get_name()
 
         self.cluster = cluster
@@ -65,6 +69,11 @@ class App:
     def deploy(self) -> None:
         logger.info(
             f"Deploying {self.env.get_name()} to namespace {self.namespace.name} 🚀"
+        )
+        comm.render_file(
+            self.env.root / "values.yaml",
+            self.env.root / f"values.{self.env.stage}.yaml",
+            context=self.env.__dict__,
         )
 
     def terminal(self) -> None:

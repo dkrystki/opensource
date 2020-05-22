@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
 
 from pangea import cluster
-from {{ cluster_name }}.env_comm import {{ class_name }}EnvComm
+from {{ cluster_name }}.env_comm import {{ cluster_class_name }}EnvComm
 
 
-class {{ class_name }}(cluster.Cluster):
+class {{ cluster_class_name }}(cluster.Cluster):
     class Meta:
         name = "{{ cluster_name }}"
 
-    def __init__(self, env: {{ class_name }}EnvComm):
+    def __init__(self, env: {{ cluster_class_name }}EnvComm):
         super().__init__(env)
         self.env = env
 
 
-Cluster = {{ class_name }}
+Cluster = {{ cluster_class_name }}
 
 if __name__ == "__main__":
-    {{ class_name }}.handle_command()
+    {{ cluster_class_name }}.handle_command()
