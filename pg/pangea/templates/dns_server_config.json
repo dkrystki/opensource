@@ -1,0 +1,22 @@
+{
+"version": 2,
+	"remoteDnsServers": [],
+  "envs": [
+    {
+      "name": "default",
+      "hostnames": [
+      ]
+    }
+  ],
+	"activeEnv": "default",
+	"webServerPort": 0,
+	"dnsServerPort": 0,
+	"defaultDns": null,
+	"logLevel": "",
+	"logFile": "",
+	"registerContainerNames": false,
+	"hostMachineHostname": "",
+	"domain": "",
+	"dpsNetwork": false,
+	"dpsNetworkAutoConnect": false
+}

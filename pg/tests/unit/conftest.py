@@ -5,6 +5,7 @@ from typing import List
 
 from tests.unit import utils
 
+import pytest_socket
 from envo import Env
 from pangea.cluster import Cluster
 from pytest import fixture
@@ -12,6 +13,10 @@ from unit import utils
 
 test_root = Path(os.path.realpath(__file__)).parent
 root = test_root.parent
+
+
+def pytest_runtest_setup():
+    pytest_socket.disable_socket()
 
 
 @fixture

@@ -15,6 +15,7 @@ flake8 = "^3.7.9"
 jinja2 = "^2.11.2"
 black = "^19.10b0"
 pytest-socket = "^0.3.4"
+docker = "^4.2.0"
 
 [tool.poetry.dev-dependencies]
 flake8 = "^3.7.9"

@@ -15,13 +15,14 @@ class {{ cluster_class_name }}EnvComm(ClusterEnv):
     def __init__(self) -> None:
         super().__init__()
 
-        self.skaffold_ver = "1.6.0"
-        self.kubectl_ver = "1.17.0"
-        self.hostess_ver = "0.3.0"
-        self.helm_ver = "3.2.1"
-        self.kind_ver = "0.8.1"
-        self.debian_ver = "buster"
-        self.docker_ver = "18.09.9"
+        self.deps = self.Deps(skaffold_ver = "1.6.0",
+                              kubectl_ver = "1.17.0",
+                              hostess_ver = "0.3.0",
+                              helm_ver = "3.2.1",
+                              kind_ver = "0.8.1",
+                              debian_ver = "buster",
+                              docker_ver = "18.09.9",
+                              dns_server_ver = "2.19.0")
 
         self.apps.extend([])
 

@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 
 import pytest
@@ -108,19 +107,13 @@ class TestCluster:
         assert (app_dir / "env_stage.py").exists()
         assert (app_dir / "env_prod.py").exists()
 
-    def test_deploy(self, cluster, add_registry_app, bootstrap, cluster_ip):
+    def test_deploy(self, cluster, bootstrap, add_registry_app, cluster_ip):
         cluster.createapp("registry", "system", "registry")
         # we have to recreate cluster object due changing env_comm.py in registry_app fixture
         cluster = utils.cluster()
         cluster.deploy()
 
         assert Path("kind.test.yaml").exists()
-        assert Path(".hosts").exists()
-        assert (
-            Path(os.environ["HOSTALIASES"]).read_text()
-            == f"{cluster_ip} sandbox.registry.test"
-        )
-
         ingress_dir = Path("system/ingress")
         assert ingress_dir.exists()
         assert (ingress_dir / "values.yaml").exists()

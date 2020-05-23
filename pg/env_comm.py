@@ -20,6 +20,7 @@ class PangeaEnvComm(Env):
     hostess_ver: str
     helm_ver: str
     kind_ver: str
+    dns_server_ver: str
 
     deps_dir: Path
     bin_dir: Path
@@ -35,6 +36,7 @@ class PangeaEnvComm(Env):
         self.hostess_ver = "0.3.0"
         self.helm_ver = "3.2.1"
         self.kind_ver = "0.8.1"
+        self.dns_server_ver = "2.19.0"
 
         self.deps_dir = self.meta.root / ".deps"
         self.bin_dir = self.meta.root / ".bin"
@@ -44,6 +46,3 @@ class PangeaEnvComm(Env):
 
         if "PYTHONPATH" not in os.environ:
             os.environ["PYTHONPATH"] = ""
-
-        # self.pythonpath = os.environ["PYTHONPATH"]
-        # self.pythonpath = str(self.meta.root) + ":" + self.pythonpath

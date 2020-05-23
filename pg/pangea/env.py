@@ -20,16 +20,20 @@ class ClusterEnv(Env):
         username: str
         password: str
 
+    @dataclass
+    class Deps(BaseEnv):
+        skaffold_ver: str
+        kubectl_ver: str
+        helm_ver: str
+        kind_ver: str
+        hostess_ver: str
+        debian_ver: str
+        docker_ver: str
+        dns_server_ver: str
+
     class Meta(Env.Meta):
         pass
 
-    skaffold_ver: str
-    kubectl_ver: str
-    helm_ver: str
-    kind_ver: str
-    hostess_ver: str
-    debian_ver: str
-    docker_ver: str
     device: Device
     registry: Registry
     deps_dir: Path
@@ -39,8 +43,9 @@ class ClusterEnv(Env):
     path: Raw[str]
     kubeconfig: Raw[Path]
     pythonpath: Raw[str]
-    hostaliases: Raw[Path]
     apps: List[str]
+
+    deps: Deps
 
     def __init__(self):
         super().__init__()
@@ -57,5 +62,3 @@ class ClusterEnv(Env):
         self.pythonpath = str(self.meta.root.parent.absolute())
 
         self.apps = ["system.ingress"]
-
-        self.hostaliases = self.meta.root / ".hosts"

@@ -13,6 +13,7 @@ import fire
 from envo import stage_emoji_mapping
 from pangea import apps, comm, deps, devices, pkg_vars
 from pangea.apps import App
+from pangea.deps import DnsServer
 from pangea.devops import run
 from pangea.env import ClusterEnv
 from pangea.kube import Kube, Namespace
@@ -43,23 +44,34 @@ class Cluster:
 
         self.device = devices.all[self.env.device.type](self.env)
 
+        self.dns_server = DnsServer(
+            DnsServer.Sets(
+                deps_dir=self.env.deps_dir, version=self.env.deps.dns_server_ver
+            )
+        )
+
         self.deps = [
             deps.Kubectl(
                 deps.Kubectl.Sets(
-                    deps_dir=self.env.deps_dir, version=self.env.kubectl_ver
+                    deps_dir=self.env.deps_dir, version=self.env.deps.kubectl_ver
                 )
             ),
             deps.Kind(
-                deps.Kind.Sets(deps_dir=self.env.deps_dir, version=self.env.kind_ver)
+                deps.Kind.Sets(
+                    deps_dir=self.env.deps_dir, version=self.env.deps.kind_ver
+                )
             ),
             deps.Skaffold(
                 deps.Skaffold.Sets(
-                    deps_dir=self.env.deps_dir, version=self.env.skaffold_ver
+                    deps_dir=self.env.deps_dir, version=self.env.deps.skaffold_ver
                 )
             ),
             deps.Helm(
-                deps.Helm.Sets(deps_dir=self.env.deps_dir, version=self.env.helm_ver)
+                deps.Helm.Sets(
+                    deps_dir=self.env.deps_dir, version=self.env.deps.helm_ver
+                )
             ),
+            self.dns_server,
         ]
 
         self.namespaces = OrderedDict()
@@ -177,6 +189,9 @@ class Cluster:
         logger.info(f'Deploying to "{self.env.stage}" 🚀')
         run("helm repo update")
 
+        if not self.dns_server.is_running():
+            self.dns_server.start()
+
         for n in self.namespaces.values():
             n.create()
 
@@ -189,18 +204,16 @@ class Cluster:
         logger.info(f"All done 👌")
 
     def add_hosts(self) -> None:
-        logger.info("Adding hosts to .hosts file")
+        logger.info("Adding hosts to the dns server")
 
-        file_content = []
+        hosts = self.dns_server.get_hosts()
+        ip = self.device.get_ip()
 
-        device_ip = self.device.get_ip()
         for a in self.get_apps().values():
             if a.env.host:
-                file_content.append(f"{device_ip} {a.env.host}")
+                hosts[a.env.host] = ip
 
-        file_content = "\n".join(file_content) + "\n"
-
-        self.env.hostaliases.write_text(file_content)
+        self.dns_server.update_hosts(hosts)
 
     def reset(self) -> None:
         n: Namespace

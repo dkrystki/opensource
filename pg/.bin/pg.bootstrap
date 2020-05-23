@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 
-from pg.pangea.deps import Kubectl, Skaffold, Hostess, Helm, Kind
+from pg.pangea.deps import Kubectl, Skaffold, Hostess, Helm, Kind, DnsServer
 from pg.env_local import PangeaEnv
+import docker
 
 
 env = PangeaEnv()
@@ -14,7 +15,8 @@ deps = [
     Kind(Kind.Sets(deps_dir=deps_dir, version=env.kind_ver)),
     Skaffold(Skaffold.Sets(deps_dir=deps_dir, version=env.skaffold_ver)),
     Hostess(Hostess.Sets(deps_dir=deps_dir, version=env.hostess_ver)),
-    Helm(Helm.Sets(deps_dir=deps_dir, version=env.helm_ver))
+    Helm(Helm.Sets(deps_dir=deps_dir, version=env.helm_ver)),
+    DnsServer(DnsServer.Sets(deps_dir=deps_dir, version=env.dns_server_ver))
 ]
 
 for d in deps:
