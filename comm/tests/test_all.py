@@ -1,7 +1,7 @@
 from pathlib import Path
 
 import comm
-from comm import utils
+from comm import test_utils
 
 
 class TestUnit:
@@ -25,5 +25,5 @@ class TestSandbox:
 
 class TestUtils:
     def test_spawn(self):
-        s = utils.spawn("/bin/bash")
+        s = test_utils.spawn("/bin/bash")
         s.expect(".*$.*")

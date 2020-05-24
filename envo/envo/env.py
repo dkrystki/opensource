@@ -217,13 +217,13 @@ class Env(BaseEnv):
     def get_current_stage(cls) -> "Env":
         parent_module = ".".join(cls.__module__.split(".")[0:-1])
         stage = os.environ["ENVO_STAGE"]
-        env = reload(import_module(f"{parent_module}.env_{stage}")).Env()
+        env: "Env" = reload(import_module(f"{parent_module}.env_{stage}")).Env()  # type: ignore
         return env
 
     @classmethod
     def get_stage(cls, stage: str) -> "Env":
         parent_module = ".".join(cls.__module__.split(".")[0:-1])
-        env = reload(import_module(f"{parent_module}.env_{stage}")).Env()
+        env: "Env" = reload(import_module(f"{parent_module}.env_{stage}")).Env()  # type: ignore
         return env
 
     def _set_pythonpath(self) -> None:

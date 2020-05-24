@@ -10,6 +10,8 @@ python = ">=3.6.1, <4.0"
 pexpect = "^4.8.0"
 loguru = "*"
 loguru_caplog = "^0.1.3"
+black = "^19.10b0"
+jinja2 = "^2.11.2"
 
 [tool.poetry.dev-dependencies]
 flake8 = "^3.7.9"
