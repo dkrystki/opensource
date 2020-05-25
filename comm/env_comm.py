@@ -2,15 +2,16 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
-from envo import Env, Raw, VenvEnv
+import envo
+from envo import Raw, VenvEnv
 
 
 @dataclass
-class CommEnvComm(Env):
-    class Meta(Env.Meta):
+class CommEnvComm(envo.Env):
+    class Meta(envo.Env.Meta):
         root = Path(os.path.realpath(__file__)).parent
         name = "comm"
-        parent = None
+        parent = "opensource"
 
     venv: VenvEnv
     pythonpath: Raw[str]
@@ -27,3 +28,6 @@ class CommEnvComm(Env):
         self.path = str(self.bin_dir) + ":" + self.path
 
         self.pythonpath = str(self.root)
+
+
+Env = CommEnvComm

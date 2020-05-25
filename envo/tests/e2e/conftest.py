@@ -29,7 +29,7 @@ def init_child_env() -> None:
     content = content.splitlines(keepends=True)
     content.insert(0, "from sandbox.env_comm import SandboxEnvComm\n")
     content.pop(14)
-    content.insert(14, "        parent_env_comm = SandboxEnvComm\n")
+    content.insert(14, '        parent = "sandbox"\n')
     content = "".join(content)
     comm_file.write_text(content)
 

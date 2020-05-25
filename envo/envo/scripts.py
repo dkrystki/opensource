@@ -11,12 +11,12 @@ from threading import Thread
 from traceback import print_exc
 from typing import Any, Dict, List, Optional
 
+from ilock import ILock
 from inotify.adapters import Inotify  # type: ignore
 from jinja2 import Environment, Template
 from loguru import logger
 
 from envo import Env, comm
-from ilock import ILock
 
 __all__ = ["stage_emoji_mapping"]
 
@@ -128,16 +128,29 @@ class Envo:
     def _create_init_files(self) -> None:
         for d in self.env_dirs:
             init_file = d / "__init__.py"
+
+            if init_file.exists():
+                init_file_tmp = d / Path("__init__.py.tmp")
+                init_file_tmp.touch()
+                init_file_tmp.write_text(init_file.read_text())
+
             if not init_file.exists():
                 init_file.touch()
-                init_file.write_text("# __envo_delete__")
+
+            init_file.write_text("# __envo_delete__")
 
     def _delete_init_files(self) -> None:
         for d in self.env_dirs:
             init_file = d / Path("__init__.py")
+            init_file_tmp = d / Path("__init__.py.tmp")
 
             if init_file.read_text() == "# __envo_delete__":
                 init_file.unlink()
+
+            if init_file_tmp.exists():
+                init_file.touch()
+                init_file.write_text(init_file_tmp.read_text())
+                init_file_tmp.unlink()
 
     def _reload_modules(self) -> None:
         for d in reversed(self.env_dirs):
@@ -223,6 +236,7 @@ class Envo:
 
         if args.save:
             self.get_env().dump_dot_env()
+            return
 
         if args.dry_run:
             self.get_env().print_envs()

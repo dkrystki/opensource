@@ -82,6 +82,15 @@ class TestUnit:
         command("test")
         assert Path("__init__.py").exists()
 
+    def test_existing_init_py_recovered(self, init):
+        init_file = Path("__init__.py")
+        init_file.touch()
+        init_file.write_text("import flask")
+        command("test")
+
+        assert init_file.read_text() == "import flask"
+        assert not Path("__init__.py.tmp").exists()
+
     def test_init_py_delete_if_not_exists(self, init):
         assert not Path("__init__.py").exists()
 
@@ -166,15 +175,19 @@ class TestParentChild:
 
         os.chdir(str(child_dir))
         command("test")
-        assert child_env.parent is not None
+        assert child_env.get_parent() is not None
         assert child_env.test_var == "test_var_value"
-        assert child_env.parent.test_parent_var == "test_value"
-        assert child_env.parent.get_name() == "pa"
+        assert child_env.get_parent().test_parent_var == "test_value"
+        assert child_env.get_parent().get_name() == "pa"
 
         assert os.environ["PA_TESTPARENTVAR"] == "test_value"
         assert os.environ["CH_TESTVAR"] == "test_var_value"
 
-        assert Path("__init__.py").exists()
+        assert (child_dir / Path("__init__.py")).exists()
+        assert not (child_dir / Path("__init__.py.tmp")).exists()
+
+        assert (parent_dir / Path("__init__.py")).exists()
+        assert not (parent_dir / Path("__init__.py.tmp")).exists()
 
         flake8()
         os.chdir(str(parent_dir))

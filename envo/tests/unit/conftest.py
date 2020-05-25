@@ -3,8 +3,6 @@ from importlib import import_module, reload
 from pathlib import Path
 from typing import Type
 
-from envo import Env
-from pytest import fixture
 from tests.unit.nested_env.env_test import NestedEnv
 from tests.unit.parent_env.child_env.env_test import ChildEnv
 from tests.unit.property_env.env_test import PropertyEnv
@@ -12,6 +10,9 @@ from tests.unit.raw_env.env_test import RawEnv
 from tests.unit.undecl_env.env_test import UndeclEnv
 from tests.unit.unset_env.env_test import UnsetEnv
 from tests.unit.utils import command
+
+from envo import Env
+from pytest import fixture
 
 test_root = Path(os.path.realpath(__file__)).parent
 
@@ -50,11 +51,6 @@ def property_env() -> PropertyEnv:
 def child_env() -> ChildEnv:
     env = ChildEnv()
     return env
-
-
-@fixture
-def mock_exit(mocker) -> None:
-    mocker.patch("os._exit")
 
 
 @fixture

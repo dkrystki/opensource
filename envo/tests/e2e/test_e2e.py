@@ -1,4 +1,5 @@
 import os
+import re
 from pathlib import Path
 
 from tests.utils import change_file
@@ -11,7 +12,7 @@ from pexpect import run
 
 class TestE2e:
     @pytest.fixture(autouse=True)
-    def setup(self, sandbox, prompt, init):
+    def setup(self, mock_exit, sandbox, prompt, init):
         pass
 
     def test_shell(self, shell, envo_prompt):
@@ -30,9 +31,37 @@ class TestE2e:
         assert ret != b""
 
     def test_save(self):
-        ret = run("envo test --save")
-        assert b"Saved envs to .env_test" in ret
-        assert Path(".env_test").exists()
+        comm_file = Path("env_comm.py")
+        new_content = comm_file.read_text()
+        new_content = new_content.splitlines(keepends=True)
+        new_content.insert(15, "    test_var: str\n\n")
+        new_content.insert(19, '        self.test_var = "test_value"\n\n')
+        new_content = "".join(new_content)
+        comm_file.write_text(new_content)
+
+        s = spawn("envo test --save")
+        s.expect(r"Saved envs to \.env_test")
+        s.expect(pexpect.EOF)
+
+        dot_env = Path(".env_test")
+        assert dot_env.exists()
+
+        # remove PYTHONPATH since it'll be different depending on the machine
+        content = dot_env.read_text()
+        content = re.sub(r'PYTHONPATH.*"', "", content, 1)
+        content = re.sub(r'SANDBOX_ROOT.*"', "", content, 1)
+        content = content.replace("\n\n", "\n")
+        if content.startswith("\n"):
+            content = content[1:]
+
+        if content.endswith("\n"):
+            content = content[:-1]
+
+        assert (
+            content == 'SANDBOX_STAGE="test"\n'
+            'ENVO_STAGE="test"\n'
+            'SANDBOX_TESTVAR="test_value"'
+        )
 
     def test_hot_reload(self, shell, envo_prompt):
         new_content = Path("env_comm.py").read_text().replace("sandbox", "new")
@@ -115,7 +144,7 @@ class TestE2e:
 
 class TestParentChild:
     @pytest.fixture(autouse=True)
-    def setup(self, sandbox, prompt, init, init_child_env):
+    def setup(self, mock_exit, sandbox, prompt, init, init_child_env):
         pass
 
     def test_init(self, envo_prompt):

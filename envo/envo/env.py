@@ -5,7 +5,7 @@ from importlib import import_module, reload
 from pathlib import Path
 from subprocess import Popen
 from tempfile import NamedTemporaryFile
-from typing import TYPE_CHECKING, Any, Generic, List, Optional, Type, TypeVar, Union
+from typing import TYPE_CHECKING, Any, Dict, Generic, List, Optional, TypeVar, Union
 
 from loguru import logger
 
@@ -65,10 +65,8 @@ class BaseEnv:
                 inspect.ismethod(attr)
                 or (class_attr is not None and inspect.isdatadescriptor(class_attr))
                 or f.startswith("_")
-                # parent_env_comm is a special case here, we have to exclude it
-                or (f != "parent_env_comm" and inspect.isclass(attr))
+                or inspect.isclass(attr)
                 or f == "meta"
-                or f == "parent"
             ):
                 continue
 
@@ -137,7 +135,7 @@ class Env(BaseEnv):
         emoji: str = field(default="", init=False)
         name: str = field(init=False)
         root: Path = field(init=False)
-        parent_env_comm: Optional[Type["Env"]] = field(default=None, init=False)
+        parent: Optional[str] = field(default=None, init=False)
         version: str = field(default="0.1.0", init=False)
 
     root: Path
@@ -147,23 +145,27 @@ class Env(BaseEnv):
     def __init__(self) -> None:
         self.meta = self.Meta()
         self.meta.validate()
+        super().__init__(self.meta.name)
+
+        self._environ_before: Dict[str, Any] = os.environ.copy()  # type: ignore
 
         self.root = self.meta.root
         self.stage = self.meta.stage
         self.envo_stage = self.stage
 
-        self.parent = None
+        self._parent: Optional["Env"] = None
 
-        if self.meta.parent_env_comm:
-            self.parent = self.meta.parent_env_comm.get_stage(self.stage)
-            self.parent.activate()
-
-        super().__init__(self.meta.name)
+        if self.meta.parent:
+            self._parent = import_module(self.meta.parent + ".env_comm").Env.get_stage(self.stage)  # type: ignore
+            self._parent.activate()
 
     def as_string(self, add_export: bool = False) -> List[str]:
         lines: List[str] = []
 
         for key, value in os.environ.items():
+            if key in self._environ_before and value == self._environ_before[key]:
+                continue
+
             if "BASH_FUNC_" not in key:
                 line = "export " if add_export else ""
                 line += f'{key}="{value}"'
@@ -208,8 +210,8 @@ class Env(BaseEnv):
         return Popen(["bash", "--rcfile", f"{bash_rc.name}"])
 
     def get_full_name(self) -> str:
-        if self.parent:
-            return self.parent.get_full_name() + "." + self.get_name()
+        if self._parent:
+            return self._parent.get_full_name() + "." + self.get_name()
         else:
             return self.get_name()
 
@@ -226,6 +228,9 @@ class Env(BaseEnv):
         env: "Env" = reload(import_module(f"{parent_module}.env_{stage}")).Env()  # type: ignore
         return env
 
+    def get_parent(self) -> Optional["Env"]:
+        return self._parent
+
     def _set_pythonpath(self) -> None:
         if "PYTHONPATH" not in os.environ:
             os.environ["PYTHONPATH"] = ""
@@ -234,8 +239,8 @@ class Env(BaseEnv):
             str(self.meta.root.parent) + ":" + os.environ["PYTHONPATH"]
         )
 
-        if self.parent:
-            self.parent._set_pythonpath()
+        if self._parent:
+            self._parent._set_pythonpath()
 
 
 @dataclass
