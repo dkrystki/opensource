@@ -4,7 +4,7 @@ import os
 import sys
 import time
 from dataclasses import dataclass
-from importlib import import_module, reload
+from importlib import import_module
 from pathlib import Path
 from subprocess import Popen
 from threading import Thread
@@ -116,11 +116,12 @@ class Envo:
             env_file = path / f"env_{self.se.stage}.py"
             if env_file.exists():
                 self.env_dirs.append(path)
-                sys.path.insert(0, str(path.parent))
             else:
                 if path == Path("/"):
                     break
             path = path.parent
+
+        sys.path.insert(0, str(self.env_dirs[0].parent))
 
         if not self.env_dirs:
             raise RuntimeError("""Can't find "env_comm.py" """)
@@ -152,15 +153,13 @@ class Envo:
                 init_file.write_text(init_file_tmp.read_text())
                 init_file_tmp.unlink()
 
-    def _reload_modules(self) -> None:
-        for d in reversed(self.env_dirs):
-            rel_module = f"{d.name}"
-
-            reload(import_module(f"{rel_module}.env_comm"))
-            for f in d.glob("env*.py"):
-                if "comm" in f.stem:
-                    continue
-                reload(import_module(f"{rel_module}.{f.stem}"))
+    def _unload_modules(self) -> None:
+        modules = list(sys.modules.keys())[:]
+        for m in modules:
+            for d in self.env_dirs:
+                package = d.name
+                if m.startswith(package):
+                    sys.modules.pop(m)
 
     def get_env(self) -> Env:
         package = self.env_dirs[0].name
@@ -171,7 +170,7 @@ class Envo:
             # time.sleep(random.uniform(0.0, 1.5))
             self._create_init_files()
 
-            self._reload_modules()
+            self._unload_modules()
 
             try:
                 env: Env
@@ -247,6 +246,8 @@ class Envo:
 
 
 def _main() -> None:
+    # os.environ["PYTHONPATH"] = ":".join(os.environ["PYTHONPATH"].split(":")[:-1])
+
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "stage", type=str, default="local", help="Stage to activate.", nargs="?"
@@ -269,3 +270,7 @@ def _main() -> None:
     envo.handle_command(args)
 
     sys.argv = []
+
+
+if __name__ == "__main__":
+    _main()

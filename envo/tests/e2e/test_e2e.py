@@ -144,10 +144,10 @@ class TestE2e:
 
 class TestParentChild:
     @pytest.fixture(autouse=True)
-    def setup(self, mock_exit, sandbox, prompt, init, init_child_env):
+    def setup(self, mock_exit, sandbox, prompt, init):
         pass
 
-    def test_init(self, envo_prompt):
+    def test_init(self, envo_prompt, init_child_env):
         from envo.comm.test_utils import spawn
 
         os.chdir("child")
@@ -157,13 +157,13 @@ class TestParentChild:
 
         s.expect(nested_prompt)
 
-    def test_child_parent_prompt(self):
+    def test_child_parent_prompt(self, init_child_env):
         os.chdir("child")
 
         s = spawn("envo test")
         s.expect(r"🛠\(sandbox.child\).*".encode("utf-8"))
 
-    def test_hot_reload(self, envo_prompt):
+    def test_hot_reload(self, envo_prompt, init_child_env):
         from envo.comm.test_utils import spawn
 
         os.chdir("child")
@@ -188,7 +188,7 @@ class TestParentChild:
         new_prompt2 = new_prompt1.replace(b"sandbox", b"sb")
         s.expect(new_prompt2)
 
-    def test_child_importable(self, envo_prompt):
+    def test_child_importable(self, envo_prompt, init_child_env):
         from envo.comm.test_utils import spawn
 
         Path("__init__.py").touch()
@@ -207,3 +207,12 @@ class TestParentChild:
 
         s.sendline("python3 test_script.py")
         s.expect("ok")
+
+    def test_same_child_names(self, envo_prompt, init_2_same_childs):
+        root_dir = Path(".").absolute()
+
+        os.chdir(root_dir / "sandbox/sandbox")
+
+        s = spawn("envo test")
+        nested_prompt = envo_prompt.replace(b"sandbox", b"sandbox.sandbox.sandbox")
+        s.expect(nested_prompt)

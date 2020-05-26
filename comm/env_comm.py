@@ -11,7 +11,7 @@ class CommEnvComm(envo.Env):
     class Meta(envo.Env.Meta):
         root = Path(os.path.realpath(__file__)).parent
         name = "comm"
-        parent = "opensource"
+        parent = ".."
 
     venv: VenvEnv
     pythonpath: Raw[str]

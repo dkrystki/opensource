@@ -10,7 +10,7 @@ from envo import Raw
 class ChildEnvComm(envo.Env):
     class Meta(envo.Env.Meta):
         root = Path(os.path.realpath(__file__)).parent
-        parent = "parent_env"
+        parent = ".."
         name = "ch"
 
     test_var: str

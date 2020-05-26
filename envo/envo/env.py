@@ -1,7 +1,8 @@
 import inspect
 import os
+import sys
 from dataclasses import dataclass, field, fields
-from importlib import import_module, reload
+from importlib import import_module
 from pathlib import Path
 from subprocess import Popen
 from tempfile import NamedTemporaryFile
@@ -156,8 +157,7 @@ class Env(BaseEnv):
         self._parent: Optional["Env"] = None
 
         if self.meta.parent:
-            self._parent = import_module(self.meta.parent + ".env_comm").Env.get_stage(self.stage)  # type: ignore
-            self._parent.activate()
+            self._init_parent()
 
     def as_string(self, add_export: bool = False) -> List[str]:
         lines: List[str] = []
@@ -219,17 +219,36 @@ class Env(BaseEnv):
     def get_current_stage(cls) -> "Env":
         parent_module = ".".join(cls.__module__.split(".")[0:-1])
         stage = os.environ["ENVO_STAGE"]
-        env: "Env" = reload(import_module(f"{parent_module}.env_{stage}")).Env()  # type: ignore
+        env: "Env" = import_module(f"{parent_module}.env_{stage}").Env()  # type: ignore
         return env
 
     @classmethod
     def get_stage(cls, stage: str) -> "Env":
-        parent_module = ".".join(cls.__module__.split(".")[0:-1])
-        env: "Env" = reload(import_module(f"{parent_module}.env_{stage}")).Env()  # type: ignore
+        module = ".".join(cls.__module__.split(".")[0:-1])
+        env: "Env" = import_module(f"{module}.env_{stage}").Env()  # type: ignore
         return env
 
     def get_parent(self) -> Optional["Env"]:
         return self._parent
+
+    def _init_parent(self) -> None:
+        assert self.meta.parent
+        env_dir = self.root.parents[len(self.meta.parent) - 2].absolute()
+        package = env_dir.name
+
+        # this is needed for same parent and child name edge case
+        # otherwise child module will be loaded again
+        modules = list(sys.modules.keys())[:]
+        for m in modules:
+            if m.startswith(package):
+                sys.modules.pop(m)
+
+        sys.path.insert(0, str(env_dir.parent))
+        self._parent = import_module(package + ".env_comm").Env.get_stage(self.stage)  # type: ignore
+        sys.path.pop(0)
+
+        assert self._parent
+        self._parent.activate()
 
     def _set_pythonpath(self) -> None:
         if "PYTHONPATH" not in os.environ:

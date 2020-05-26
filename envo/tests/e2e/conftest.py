@@ -1,6 +1,7 @@
 import os
-import shutil
 from pathlib import Path
+
+from tests.e2e import utils
 
 from pexpect import run
 from pytest import fixture
@@ -15,26 +16,14 @@ def init() -> None:
 
 @fixture
 def init_child_env() -> None:
-    cwd = Path(".").absolute()
     child_dir = Path("child")
-    if child_dir.exists():
-        shutil.rmtree(child_dir)
+    utils.init_child_env(child_dir)
 
-    child_dir.mkdir()
-    os.chdir(str(child_dir))
-    run("envo test --init")
 
-    comm_file = Path("env_comm.py")
-    content = comm_file.read_text()
-    content = content.splitlines(keepends=True)
-    content.insert(0, "from sandbox.env_comm import SandboxEnvComm\n")
-    content.pop(14)
-    content.insert(14, '        parent = "sandbox"\n')
-    content = "".join(content)
-    comm_file.write_text(content)
+@fixture
+def init_2_same_childs() -> None:
+    sandbox1 = Path("sandbox")
+    utils.init_child_env(sandbox1)
 
-    os.chdir(str(cwd))
-
-    yield
-    if child_dir.exists():
-        shutil.rmtree(child_dir)
+    sandbox2 = Path("sandbox/sandbox")
+    utils.init_child_env(sandbox2)
