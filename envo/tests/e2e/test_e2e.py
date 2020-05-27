@@ -1,5 +1,6 @@
 import os
 import re
+import time
 from pathlib import Path
 
 from tests.utils import change_file
@@ -108,7 +109,19 @@ class TestE2e:
         )
 
         Path("env_comm.py").write_text(file_before)
+        shell.expect(envo_prompt, timeout=2)
+
+    def test_hot_reload_few_times_in_a_row_quick(self, shell, envo_prompt):
+        env_comm_file = Path("env_comm.py")
+
+        for i in range(5):
+            time.sleep(0.1)
+            env_comm_file.write_text(env_comm_file.read_text() + "\n")
+
         shell.expect(envo_prompt)
+
+        shell.sendcontrol("d")
+        shell.expect(pexpect.EOF, timeout=6)
 
     def test_autodiscovery(self, envo_prompt):
         from envo.comm.test_utils import shell
@@ -131,7 +144,7 @@ class TestE2e:
         new_content = Path("env_comm.py").read_text() + "\n"
         change_file(Path("env_comm.py"), 0.5, new_content)
 
-        [s.expect(envo_prompt, timeout=6) for s in shells]
+        [s.expect(envo_prompt, timeout=8) for s in shells]
 
     def test_env_persists_in_bash_scripts(self, shell):
         file = Path("script.sh")

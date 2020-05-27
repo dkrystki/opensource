@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from importlib import import_module
 from pathlib import Path
 from subprocess import Popen
-from threading import Thread
+from threading import Lock, Thread
 from traceback import print_exc
 from typing import Any, Dict, List, Optional
 
@@ -64,6 +64,8 @@ class Envo:
 
         self._envs_before: Dict[str, Any] = os.environ.copy()
 
+        self.shell_lock = Lock()
+
     def spawn_shell(self) -> None:
         if self.shell_proc:
             self.shell_proc.terminate()
@@ -80,6 +82,9 @@ class Envo:
 
     def _shell_thread(self) -> None:
         while True:
+            with self.shell_lock:
+                pass
+
             if self.shell_proc:
                 self.source_changed = False
                 self.shell_proc.wait()
@@ -88,17 +93,19 @@ class Envo:
             if not self.source_changed:
                 os._exit(0)
 
-            time.sleep(1)
-
     def _files_watchdog(self) -> None:
         for event in self.inotify.event_gen(yield_nones=False):
             (_, type_names, path, filename) = event
             if "IN_CLOSE_WRITE" in type_names:
-                logger.info(f'\nDetected changes in "{str(path)}".')
-                logger.info("Reloading...")
+                with self.shell_lock:
+                    logger.info(f'\nDetected changes in "{str(path)}".')
+                    logger.info("Reloading...")
 
-                self.source_changed = True
-                self.spawn_shell()
+                    self.source_changed = True
+                    self.spawn_shell()
+
+                    # without this delay envo creates nested popen shells after modifying envs files too quickly
+                    time.sleep(1.0)
 
     def _start_files_watchdog(self) -> None:
         for d in self.env_dirs:

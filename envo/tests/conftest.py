@@ -11,9 +11,6 @@ pytest_plugins = [
 ]
 
 
-os_exit = os._exit
-
-
 @fixture
 def version() -> None:
     file = envo_root / "envo/__version__.py"
@@ -26,8 +23,10 @@ def version() -> None:
 
 
 @fixture
-def mock_exit() -> None:
-    # Monkey patching because normal patch doesn't work reliably wit os.exit for some reason
-    os._exit = lambda x: None
-    yield
-    os._exit = os_exit
+def mock_exit(mocker) -> None:
+    mocker.patch("envo.scripts.os._exit")
+
+
+@fixture
+def mock_threading(mocker) -> None:
+    mocker.patch("threading.Thread.start")

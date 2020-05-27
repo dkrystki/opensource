@@ -11,9 +11,9 @@ from envo.comm.test_utils import flake8, mypy
 environ_before = os.environ.copy()
 
 
-class TestUnit:
+class TestMisc:
     @pytest.fixture(autouse=True)
-    def setup(self, mock_exit, sandbox, version, mocker, capsys):
+    def setup(self, mock_exit, mock_threading, sandbox, version, mocker, capsys):
         mocker.patch("envo.scripts.Envo._start_files_watchdog")
         os.environ = environ_before.copy()
         yield
