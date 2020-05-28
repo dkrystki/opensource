@@ -1,6 +1,5 @@
 import inspect
 import os
-import sys
 from dataclasses import dataclass, field, fields
 from importlib import import_module
 from pathlib import Path
@@ -9,6 +8,8 @@ from tempfile import NamedTemporaryFile
 from typing import TYPE_CHECKING, Any, Dict, Generic, List, Optional, TypeVar, Union
 
 from loguru import logger
+
+from envo.comm import import_module_from_file
 
 __all__ = ["BaseEnv", "Env", "Raw", "VenvEnv"]
 
@@ -224,8 +225,7 @@ class Env(BaseEnv):
 
     @classmethod
     def get_stage(cls, stage: str) -> "Env":
-        module = ".".join(cls.__module__.split(".")[0:-1])
-        env: "Env" = import_module(f"{module}.env_{stage}").Env()  # type: ignore
+        env: "Env" = import_module_from_file(cls.Meta.root / f"env_{stage}.py").Env()  # type: ignore
         return env
 
     def get_parent(self) -> Optional["Env"]:
@@ -234,19 +234,7 @@ class Env(BaseEnv):
     def _init_parent(self) -> None:
         assert self.meta.parent
         env_dir = self.root.parents[len(self.meta.parent) - 2].absolute()
-        package = env_dir.name
-
-        # this is needed for same parent and child name edge case
-        # otherwise child module will be loaded again
-        modules = list(sys.modules.keys())[:]
-        for m in modules:
-            if m.startswith(package):
-                sys.modules.pop(m)
-
-        sys.path.insert(0, str(env_dir.parent))
-        self._parent = import_module(package + ".env_comm").Env.get_stage(self.stage)  # type: ignore
-        sys.path.pop(0)
-
+        self._parent = import_module_from_file(env_dir / f"env_{self.stage}.py").Env()
         assert self._parent
         self._parent.activate()
 

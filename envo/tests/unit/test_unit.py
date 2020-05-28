@@ -20,12 +20,27 @@ class TestMisc:
         out, err = capsys.readouterr()
         assert err == ""
 
-    def test_creating(self, init):
+    def test_init(self, init):
         assert Path("env_comm.py").exists()
         assert Path("env_test.py").exists()
 
         flake8()
         mypy()
+
+    @pytest.mark.parametrize(
+        "dir_name", ["my-sandbox", "my sandbox", ".sandbox", ".san.d- b  ox"]
+    )
+    def test_init_weird_dir_name(self, dir_name):
+        env_dir = Path(dir_name)
+        env_dir.mkdir()
+        os.chdir(str(env_dir))
+        command("test", "--init")
+
+        assert Path("env_comm.py").exists()
+        assert Path("env_test.py").exists()
+        command("test")
+
+        flake8()
 
     def test_importing(self, init, env):
         assert str(env) == "sandbox"

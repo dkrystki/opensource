@@ -33,12 +33,17 @@ class TestE2e:
 
     def test_save(self):
         comm_file = Path("env_comm.py")
-        new_content = comm_file.read_text()
-        new_content = new_content.splitlines(keepends=True)
-        new_content.insert(15, "    test_var: str\n\n")
-        new_content.insert(19, '        self.test_var = "test_value"\n\n')
-        new_content = "".join(new_content)
-        comm_file.write_text(new_content)
+
+        comm_file.write_text(
+            comm_file.read_text().replace(
+                "# Declare your variables here", "test_var: str"
+            )
+        )
+        comm_file.write_text(
+            comm_file.read_text().replace(
+                "# Define your variables here", 'self.test_var = "test_value"'
+            )
+        )
 
         s = spawn("envo test --save")
         s.expect(r"Saved envs to \.env_test")
@@ -95,12 +100,12 @@ class TestE2e:
         shell.expect(envo_prompt)
 
     def test_hot_reload_error(self, shell, envo_prompt):
-        file_before = Path("env_comm.py").read_text()
+        comm_file = Path("env_comm.py")
+        file_before = comm_file.read_text()
 
-        new_content = Path("env_comm.py").read_text()
-        new_content = new_content.splitlines(keepends=True)
-        new_content.insert(14, "    test_var: int\n\n")
-        new_content = "".join(new_content)
+        new_content = comm_file.read_text().replace(
+            "# Declare your variables here", "test_var: int"
+        )
         change_file(Path("env_comm.py"), 0.5, new_content)
 
         shell.expect(
@@ -183,7 +188,7 @@ class TestParentChild:
 
         s = spawn("envo test")
         nested_prompt = envo_prompt.replace(b"sandbox", b"sandbox.child")
-        s.expect(nested_prompt)
+        s.expect(nested_prompt, timeout=2)
 
         child_file = Path("env_comm.py")
         content = child_file.read_text()
@@ -191,7 +196,7 @@ class TestParentChild:
         child_file.write_text(content)
 
         new_prompt1 = nested_prompt.replace(b"child", b"ch")
-        s.expect(new_prompt1)
+        s.expect(new_prompt1, timeout=2)
 
         parent_file = Path("../env_comm.py")
         content = parent_file.read_text()
@@ -199,7 +204,7 @@ class TestParentChild:
         parent_file.write_text(content)
 
         new_prompt2 = new_prompt1.replace(b"sandbox", b"sb")
-        s.expect(new_prompt2)
+        s.expect(new_prompt2, timeout=2)
 
     def test_child_importable(self, envo_prompt, init_child_env):
         from envo.comm.test_utils import spawn

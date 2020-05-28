@@ -1,6 +1,9 @@
 from dataclasses import dataclass
+from typing import Any
+from pathlib import Path
 
-from opensource.env_comm import OpensourceEnvComm
+from envo.comm import import_module_from_file
+OpensourceEnvComm: Any = import_module_from_file(Path("env_comm.py")).OpensourceEnvComm
 
 
 @dataclass

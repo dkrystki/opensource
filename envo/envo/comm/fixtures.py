@@ -37,7 +37,9 @@ def assert_no_stderr(capsys) -> Callable[[], None]:  # type: ignore
 
 @fixture(name="shell")
 def shell_fixture() -> pexpect.spawn:
-    return test_utils.shell()
+    from .test_utils import shell
+
+    return shell()
 
 
 @fixture

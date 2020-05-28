@@ -4,7 +4,6 @@ import os
 import sys
 import time
 from dataclasses import dataclass
-from importlib import import_module
 from pathlib import Path
 from subprocess import Popen
 from threading import Lock, Thread
@@ -17,8 +16,10 @@ from jinja2 import Environment, Template
 from loguru import logger
 
 from envo import Env, comm
+from envo.comm import import_module_from_file
 
 __all__ = ["stage_emoji_mapping"]
+
 
 package_root = Path(os.path.realpath(__file__)).parent
 templates_dir = package_root / "templates"
@@ -169,8 +170,11 @@ class Envo:
                     sys.modules.pop(m)
 
     def get_env(self) -> Env:
-        package = self.env_dirs[0].name
+        env_dir = self.env_dirs[0]
+        package = env_dir.name
         env_name = f"env_{self.se.stage}"
+        env_file = env_dir / f"{env_name}.py"
+
         module_name = f"{package}.{env_name}"
 
         with ILock("envo_lock"):
@@ -180,8 +184,9 @@ class Envo:
             self._unload_modules()
 
             try:
+                module = import_module_from_file(env_file)
                 env: Env
-                env = import_module(module_name).Env()  # type: ignore
+                env = module.Env()
                 return env
             except ImportError as exc:
                 logger.error(f"""Couldn't import "{module_name}" ({exc}).""")
@@ -199,8 +204,10 @@ class Envo:
             exit(1)
 
         output_file.touch()
-        package_name = Path(".").absolute().name
+        env_dir = Path(".").absolute()
+        package_name = comm.dir_name_to_pkg_name(env_dir.name)
         class_name = comm.dir_name_to_class_name(package_name) + "Env"
+
         context = {
             "class_name": class_name,
             "name": package_name,

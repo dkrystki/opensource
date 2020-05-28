@@ -1,19 +1,29 @@
 import os
 from pathlib import Path
+from typing import List
 
 import pexpect as pexpect
+
+__all__ = [
+    "prompt",
+    "envo_prompt",
+    "spawn",
+    "shell",
+    "flake8",
+    "mypy",
+]
 
 prompt = r".*@.*$".encode("utf-8")
 envo_prompt = r"🛠\(sandbox\).*".encode("utf-8")
 
 
 def spawn(command: str) -> pexpect.spawn:
-    s = pexpect.spawn(command, echo=False)
+    s = pexpect.spawn(command, echo=False, timeout=1)
     return s
 
 
 def shell() -> pexpect.spawn:
-    p = pexpect.spawn("envo test", timeout=1)
+    p = spawn("envo test")
     p.expect(envo_prompt)
     return p
 
@@ -28,18 +38,19 @@ def mypy() -> None:
 
     original_dir = Path(".").absolute()
     package_name = original_dir.name
-
-    init_exists = Path("__init__.py").exists()
-
-    if not init_exists:
-        Path("__init__.py").touch()
-
+    Path("__init__.py").touch()
     os.chdir("..")
     environ = {"MYPYPATH": str(original_dir)}
     environ.update(os.environ)
     p = run(f"mypy {package_name}", env=environ, echo=False)
     assert b"Success: no issues found" in p
     os.chdir(str(original_dir))
+    Path("__init__.py").unlink()
 
-    if not init_exists:
-        Path("__init__.py").unlink()
+
+def strs_in_regex(strings: List[str]) -> str:
+    """
+    Return regex that matches strings in any order.
+    """
+    ret = "".join([rf"(?=.*{s})" for s in strings])
+    return ret

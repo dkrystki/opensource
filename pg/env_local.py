@@ -1,6 +1,10 @@
 from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
 
-from opensource.pg.env_comm import PangeaEnvComm
+from envo.comm import import_module_from_file
+
+PangeaEnvComm: Any = import_module_from_file(Path("env_comm.py")).PangeaEnvComm
 
 
 @dataclass

@@ -7,8 +7,15 @@ from comm import test_utils
 class TestUnit:
     def test_dir_name_to_class_name(self):
         assert comm.dir_name_to_class_name("sample_dir") == "SampleDir"
+        assert comm.dir_name_to_class_name("sample-dir") == "SampleDir"
         assert comm.dir_name_to_class_name(".sample_dir") == "SampleDir"
         assert comm.dir_name_to_class_name("sample dir") == "SampleDir"
+
+    def test_dir_name_to_pkg_name(self):
+        assert comm.dir_name_to_pkg_name("sample_dir") == "sample_dir"
+        assert comm.dir_name_to_pkg_name("sample-dir") == "sample_dir"
+        assert comm.dir_name_to_pkg_name(".sample_dir") == "sample_dir"
+        assert comm.dir_name_to_pkg_name("sample dir") == "sample_dir"
 
 
 class TestSandbox:
