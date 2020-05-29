@@ -243,7 +243,7 @@ class Env(BaseEnv):
             os.environ["PYTHONPATH"] = ""
 
         os.environ["PYTHONPATH"] = (
-            str(self.meta.root.parent) + ":" + os.environ["PYTHONPATH"]
+            str(self.root.parent) + ":" + os.environ["PYTHONPATH"]
         )
 
         if self._parent:

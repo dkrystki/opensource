@@ -210,7 +210,7 @@ class Envo:
 
         context = {
             "class_name": class_name,
-            "name": package_name,
+            "name": env_dir.name,
             "package_name": package_name,
             "stage": self.se.stage,
             "emoji": stage_emoji_mapping[self.se.stage],
