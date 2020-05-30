@@ -1,10 +1,8 @@
-from dataclasses import dataclass
 from pathlib import Path
 
 import envo
 
 
-@dataclass
 class {{ class_name }}Comm(envo.Env):
     class Meta(envo.Env.Meta):
         root = Path(__file__).parent

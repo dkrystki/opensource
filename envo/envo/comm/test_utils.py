@@ -13,12 +13,12 @@ __all__ = [
     "mypy",
 ]
 
-prompt = r".*@.*$".encode("utf-8")
-envo_prompt = r"🛠\(sandbox\).*".encode("utf-8")
+prompt = r"[\(.*\)]*[(\w|\s)]*".encode()
+envo_prompt = r"🛠\(sandbox\)".encode("utf-8") + prompt
 
 
 def spawn(command: str) -> pexpect.spawn:
-    s = pexpect.spawn(command, echo=False, timeout=1)
+    s = pexpect.spawn(command, echo=False, timeout=2)
     return s
 
 

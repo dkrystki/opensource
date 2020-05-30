@@ -1,11 +1,10 @@
 import os
-from importlib import import_module, reload
 from pathlib import Path
 
+import pytest
 from tests.unit.utils import command, test_root
 
 import envo.scripts
-import pytest
 from envo.comm.test_utils import flake8, mypy
 
 environ_before = os.environ.copy()
@@ -13,7 +12,9 @@ environ_before = os.environ.copy()
 
 class TestMisc:
     @pytest.fixture(autouse=True)
-    def setup(self, mock_exit, mock_threading, sandbox, version, mocker, capsys):
+    def setup(
+        self, mock_exit, mock_threading, mock_shell, sandbox, version, mocker, capsys
+    ):
         mocker.patch("envo.scripts.Envo._start_files_watchdog")
         os.environ = environ_before.copy()
         yield
@@ -42,7 +43,7 @@ class TestMisc:
 
         flake8()
 
-    def test_importing(self, init, env):
+    def test_importing(self, init, shell, env):
         assert str(env) == "sandbox"
         assert env.meta.stage == "test"
         assert env.meta.emoji == envo.scripts.stage_emoji_mapping[env.meta.stage]
@@ -160,10 +161,12 @@ class TestMisc:
         assert env_comm.get_current_stage().meta.stage == "local"
 
     def test_venv_addon(self):
+        from tests.unit.utils import shell, env
+
         command("test", "--init=venv")
 
-        reload(import_module("sandbox.env_comm"))
-        env = reload(import_module("sandbox.env_test")).Env()
+        shell()
+        env = env()
 
         assert hasattr(env, "venv")
         env.activate()
@@ -176,7 +179,7 @@ class TestMisc:
 
 class TestParentChild:
     @pytest.fixture(autouse=True)
-    def setup(self, mock_exit, sandbox, version, mocker, capsys):
+    def setup(self, mock_exit, mock_shell, sandbox, version, mocker, capsys):
         mocker.patch("envo.scripts.Envo._start_files_watchdog")
         os.environ = environ_before.copy()
         yield

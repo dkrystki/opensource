@@ -3,12 +3,10 @@ import re
 import time
 from pathlib import Path
 
-from tests.utils import change_file
-
 import pexpect
 import pytest
-from envo.comm.test_utils import spawn
 from pexpect import run
+from tests.utils import change_file
 
 
 class TestE2e:
@@ -17,8 +15,9 @@ class TestE2e:
         pass
 
     def test_shell(self, shell, envo_prompt):
-        shell.sendline("echo test")
-        shell.expect(b"test.*" + envo_prompt)
+        shell.sendline("print('test')")
+        shell.expect(b"test")
+        shell.expect(envo_prompt)
 
         assert Path("env_comm.py").exists()
         assert Path("env_test.py").exists()
@@ -32,6 +31,8 @@ class TestE2e:
         assert ret != b""
 
     def test_save(self):
+        from envo.comm.test_utils import spawn
+
         comm_file = Path("env_comm.py")
 
         comm_file.write_text(
@@ -76,7 +77,7 @@ class TestE2e:
         shell.expect(new_prompt, timeout=2)
 
     def test_hot_reload_old_envs_gone(self, shell, envo_prompt):
-        shell.sendline("echo $SANDBOX_STAGE")
+        shell.sendline("$SANDBOX_STAGE")
         shell.expect("test")
 
         new_content = Path("env_comm.py").read_text().replace("sandbox", "new")
@@ -84,10 +85,10 @@ class TestE2e:
         new_prompt = envo_prompt.replace(b"sandbox", b"new")
         shell.expect(new_prompt)
 
-        shell.sendline("echo $NEW_STAGE")
+        shell.sendline("$NEW_STAGE")
         shell.expect("test")
 
-        shell.sendline("echo $SANDBOX_STAGE")
+        shell.sendline("$SANDBOX_STAGE")
         shell.expect(new_prompt)
 
     def test_hot_reload_child_dir(self, shell, envo_prompt):
@@ -109,9 +110,10 @@ class TestE2e:
         change_file(Path("env_comm.py"), 0.5, new_content)
 
         shell.expect(
-            r'.*Reloading.*exit.*Detected errors!.*Variable "sandbox.test_var" is unset!.*',
+            r'Reloading.*Detected errors!.*Variable "sandbox\.test_var" is unset!',
             timeout=5,
         )
+        shell.expect("❌".encode("utf-8") + envo_prompt, timeout=2)
 
         Path("env_comm.py").write_text(file_before)
         shell.expect(envo_prompt, timeout=2)
@@ -135,7 +137,8 @@ class TestE2e:
         os.chdir("./test_dir")
 
         s = shell()
-        s.sendline("echo test")
+        s.sendline("print('test')")
+        s.expect(b"test")
         s.expect(envo_prompt)
         s.sendcontrol("d")
 
@@ -154,7 +157,7 @@ class TestE2e:
     def test_env_persists_in_bash_scripts(self, shell):
         file = Path("script.sh")
         file.touch()
-        file.write_text("echo $SANDBOX_ROOT\n")
+        file.write_text("$SANDBOX_ROOT\n")
 
         shell.sendline("bash script.sh")
         shell.expect(str(Path(".").absolute()))
@@ -176,6 +179,8 @@ class TestParentChild:
         s.expect(nested_prompt)
 
     def test_child_parent_prompt(self, init_child_env):
+        from envo.comm.test_utils import spawn
+
         os.chdir("child")
 
         s = spawn("envo test")
@@ -188,7 +193,7 @@ class TestParentChild:
 
         s = spawn("envo test")
         nested_prompt = envo_prompt.replace(b"sandbox", b"sandbox.child")
-        s.expect(nested_prompt, timeout=2)
+        s.expect(nested_prompt)
 
         child_file = Path("env_comm.py")
         content = child_file.read_text()
@@ -196,7 +201,7 @@ class TestParentChild:
         child_file.write_text(content)
 
         new_prompt1 = nested_prompt.replace(b"child", b"ch")
-        s.expect(new_prompt1, timeout=2)
+        s.expect(new_prompt1)
 
         parent_file = Path("../env_comm.py")
         content = parent_file.read_text()
@@ -204,7 +209,7 @@ class TestParentChild:
         parent_file.write_text(content)
 
         new_prompt2 = new_prompt1.replace(b"sandbox", b"sb")
-        s.expect(new_prompt2, timeout=2)
+        s.expect(new_prompt2)
 
     def test_child_importable(self, envo_prompt, init_child_env):
         from envo.comm.test_utils import spawn
@@ -226,11 +231,13 @@ class TestParentChild:
         s.sendline("python3 test_script.py")
         s.expect("ok")
 
-    def test_same_child_names(self, envo_prompt, init_2_same_childs):
+    def test_same_child_names(self, init_2_same_childs):
+        from envo.comm.test_utils import spawn
+
         root_dir = Path(".").absolute()
 
         os.chdir(root_dir / "sandbox/sandbox")
 
         s = spawn("envo test")
-        nested_prompt = envo_prompt.replace(b"sandbox", b"sandbox.sandbox.sandbox")
-        s.expect(nested_prompt)
+        s.sendline('"sandbox.sandbox.sandbox" in $PROMPT')
+        s.expect("True")

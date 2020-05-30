@@ -29,6 +29,8 @@ inotify = "*"
 loguru = "*"
 jinja2 = "^2"
 ilock = "^1"
+xonsh = "^0.9"
+prompt_toolkit = "^3"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.4.1"

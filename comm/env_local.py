@@ -1,9 +1,10 @@
-from dataclasses import dataclass
+from envo.comm import import_module_from_file
 
-from comm.env_comm import CommEnvComm
+OpensourceEnvCommCommEnvComm: Any = import_module_from_file(
+    Path("env_comm.py")
+).CommEnvComm
 
 
-@dataclass
 class CommEnv(CommEnvComm):
     class Meta(CommEnvComm.Meta):
         stage = "local"

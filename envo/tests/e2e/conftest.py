@@ -1,12 +1,12 @@
 import os
 from pathlib import Path
 
-from tests.e2e import utils
-
 from pexpect import run
 from pytest import fixture
+from tests.e2e import utils
 
-test_root = Path(os.path.realpath(__file__)).parent
+test_root = Path(os.path.realpath(__file__)).parent.parent
+envo_root = test_root.parent / "envo"
 
 
 @fixture

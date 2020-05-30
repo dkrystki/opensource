@@ -6,7 +6,6 @@ import envo
 from envo import VenvEnv, BaseEnv, Raw
 
 
-@dataclass
 class OpensourceEnvComm(envo.Env):
     class Meta(envo.Env.Meta):
         root = Path(os.path.realpath(__file__)).parent
@@ -27,3 +26,4 @@ class OpensourceEnvComm(envo.Env):
 
 
 Env = OpensourceEnvComm
+

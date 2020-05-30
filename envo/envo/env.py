@@ -1,11 +1,18 @@
 import inspect
 import os
 from dataclasses import dataclass, field, fields
-from importlib import import_module
 from pathlib import Path
-from subprocess import Popen
-from tempfile import NamedTemporaryFile
-from typing import TYPE_CHECKING, Any, Dict, Generic, List, Optional, TypeVar, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    Generic,
+    List,
+    Optional,
+    Tuple,
+    TypeVar,
+    Union,
+)
 
 from loguru import logger
 
@@ -16,6 +23,7 @@ __all__ = ["BaseEnv", "Env", "Raw", "VenvEnv"]
 
 T = TypeVar("T")
 
+
 if TYPE_CHECKING:
     Raw = Union[T]
 else:
@@ -24,8 +32,14 @@ else:
         pass
 
 
-@dataclass
-class BaseEnv:
+class EnvMetaclass(type):
+    def __new__(cls, name: str, bases: Tuple, attr: Dict[str, Any]) -> Any:
+        cls = super().__new__(cls, name, bases, attr)
+        cls = dataclass(cls, repr=False)  # type: ignore
+        return cls
+
+
+class BaseEnv(metaclass=EnvMetaclass):
     class EnvException(Exception):
         pass
 
@@ -128,10 +142,21 @@ class BaseEnv:
     def __str__(self) -> str:
         return self._name
 
+    def __repr__(self) -> str:
+        return self._repr()
 
-@dataclass
+    def _repr(self, level: int = 0) -> str:
+        ret = []
+        for f in fields(self):
+            attr = getattr(self, f.name)
+            intend = "    "
+            r = attr._repr(level + 1) if isinstance(attr, BaseEnv) else repr(attr)
+            ret.append(f"{intend * level}{f.name}: {type(attr).__name__} = {r}")
+
+        return "\n" + "\n".join(ret)
+
+
 class Env(BaseEnv):
-    @dataclass
     class Meta(BaseEnv):
         stage: str = field(default="comm", init=False)
         emoji: str = field(default="", init=False)
@@ -194,22 +219,6 @@ class Env(BaseEnv):
         path.write_text(content)
         logger.info(f"Saved envs to {str(path)} 💾")
 
-    def shell(self) -> Popen:
-        self.activate()
-
-        bash_rc = NamedTemporaryFile(
-            mode="w", buffering=True, delete=False, encoding="utf-8"
-        )
-        bash_rc.write("source ~/.bashrc\n")
-        bash_rc.write("")
-        content = ";\n".join(self.as_string(add_export=True))
-        bash_rc.write(content)
-        bash_rc.write("\n")
-
-        bash_rc.write(f"PS1={self.meta.emoji}\\({self.get_full_name()}\\)$PS1\n")
-
-        return Popen(["bash", "--rcfile", f"{bash_rc.name}"])
-
     def get_full_name(self) -> str:
         if self._parent:
             return self._parent.get_full_name() + "." + self.get_name()
@@ -218,9 +227,8 @@ class Env(BaseEnv):
 
     @classmethod
     def get_current_stage(cls) -> "Env":
-        parent_module = ".".join(cls.__module__.split(".")[0:-1])
         stage = os.environ["ENVO_STAGE"]
-        env: "Env" = import_module(f"{parent_module}.env_{stage}").Env()  # type: ignore
+        env: "Env" = cls.get_stage(stage)
         return env
 
     @classmethod
@@ -250,7 +258,6 @@ class Env(BaseEnv):
             self._parent._set_pythonpath()
 
 
-@dataclass
 class VenvEnv(BaseEnv):
     path: Raw[str]
     bin: Path

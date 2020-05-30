@@ -1,12 +1,10 @@
 import os
-from dataclasses import dataclass
 from pathlib import Path
 
 import envo
 from envo import Raw, VenvEnv
 
 
-@dataclass
 class CommEnvComm(envo.Env):
     class Meta(envo.Env.Meta):
         root = Path(os.path.realpath(__file__)).parent

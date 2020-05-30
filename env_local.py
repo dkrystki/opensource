@@ -6,7 +6,6 @@ from envo.comm import import_module_from_file
 OpensourceEnvComm: Any = import_module_from_file(Path("env_comm.py")).OpensourceEnvComm
 
 
-@dataclass
 class OpensourceEnv(OpensourceEnvComm):
     class Meta(OpensourceEnvComm.Meta):
         stage = "local"

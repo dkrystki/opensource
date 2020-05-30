@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
 set -eou pipefail
 
-poetry run black $@
+black $@
 git add $@
